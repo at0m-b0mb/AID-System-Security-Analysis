@@ -16,6 +16,7 @@ This repository contains **Software Package II** - a deliberately compromised ve
 - ✅ **Complete CWE mappings** with detailed analysis
 - ✅ **50+ pages** of security documentation
 - ✅ **Automated testing suite** with exploitation demos
+- ✅ **Direct database exploitation tool** for complete system subversion
 - ✅ **Full adversarial reasoning** for each vulnerability
 - ✅ **Patient safety impact** analysis
 - ✅ **Unobtrusive implementation** - system remains fully functional
@@ -82,8 +83,11 @@ go build -o aid-system ./cmd/main.go
 
 ### Quick Exploit Test
 ```bash
-# Run automated exploit demonstration
+# Application-level exploits
 ./exploit_demo.sh
+
+# Direct database manipulation (complete system takeover)
+./direct_db_exploit.sh
 
 # Or manual test - Backdoor access
 ./aid-system
@@ -120,7 +124,9 @@ AID-System-Security-Analysis/
     ├── README.md                                # Original system documentation
     ├── VULNERABILITY_REPORT.md                  # Complete vulnerability analysis (50 pages)
     ├── USER_MANUAL_PHASE_II.md                  # Compromised system user manual
+    ├── COMPLETE_ATTACK_ANALYSIS.md              # All attack vectors documented
     ├── exploit_demo.sh                          # Automated exploitation script
+    ├── direct_db_exploit.sh                     # Direct database manipulation tool
     ├── go.mod                                   # Go dependencies
     └── go.sum                                   # Dependency checksums
 ```
