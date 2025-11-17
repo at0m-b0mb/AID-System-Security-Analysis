@@ -190,48 +190,63 @@ chmod +x direct_db_exploit.sh
 
 # Available options:
 # 1. View all users
-# 2. Create malicious clinician (instant admin access)
-# 3. Escalate patient to clinician (privilege escalation)
-# 4. Modify insulin to dangerous levels (life-threatening)
-# 5. Mass attack on all patients (mass casualty)
-# 6. Delete patient data (data destruction)
-# 7. Exfiltrate all data (HIPAA violation)
-# 8. Erase audit logs (cover tracks)
-# 9. SQL injection demo (arbitrary commands)
-# 10. Complete takeover (automated full compromise)
+# 2. View database schema
+# 3. Create malicious clinician (instant admin access)
+# 4. Escalate patient to clinician (privilege escalation)
+# 5. Inject fake user (identity fraud)
+# 6. Change user password (account takeover)
+# 7. Modify insulin to dangerous levels (life-threatening)
+# 8. Mass attack on all patients (mass casualty)
+# 9. Delete patient data (data destruction)
+# 10. Corrupt database records
+# 11. Exfiltrate all data (HIPAA violation)
+# 12. Erase audit logs (cover tracks)
+# 13. SQL injection demo (arbitrary commands)
+# 14. Complete takeover (automated full compromise)
 ```
 
 ### Example Attack Scenarios
 
-#### Scenario 1: Targeted Patient Harm
+#### Scenario 1: Account Takeover + Patient Harm
 ```bash
 ./direct_db_exploit.sh
-# Select: 6 (Modify insulin)
+# Select: 6 (Change password)
+# User: CL1001 (clinician)
+# New PIN: hacked
+# Login as CL1001 with new password
+# Modify patient insulin to lethal levels
+# Result: Complete account compromise + patient harm
+```
+
+#### Scenario 2: Targeted Patient Harm
+```bash
+./direct_db_exploit.sh
+# Select: 7 (Modify insulin)
 # Patient: PA1993
 # Basal: 8.0 units/hour (7x normal)
 # Result: Severe hypoglycemia, potential death
 ```
 
-#### Scenario 2: Mass Casualty Event
+#### Scenario 3: Mass Casualty Event
 ```bash
 ./direct_db_exploit.sh
-# Select: 7 (Mass attack)
+# Select: 8 (Mass attack)
 # Basal: 10.0 units/hour for ALL patients
 # Result: Multiple simultaneous emergencies
 ```
 
-#### Scenario 3: Data Theft + Evidence Destruction
+#### Scenario 4: Data Theft + Evidence Destruction
 ```bash
 ./direct_db_exploit.sh
-# Select: 10 (Exfiltrate data)
-# Then: 11 (Erase logs)
+# Select: 11 (Exfiltrate data)
+# Then: 12 (Erase logs)
 # Result: All data stolen, no forensic evidence
 ```
 
-#### Scenario 4: Complete System Takeover
+#### Scenario 5: Complete System Takeover
 ```bash
 ./direct_db_exploit.sh
-# Select: 13 (Complete takeover)
+# Select: 14 (Complete takeover)
 # Result: Multiple backdoors, all patients compromised, data stolen, logs erased
 ```
 
