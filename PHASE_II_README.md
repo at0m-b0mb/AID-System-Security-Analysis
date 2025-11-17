@@ -134,43 +134,178 @@ AID-System-Security-Analysis/
 
 ---
 
-## 🔓 Vulnerability Summary
+## 🔓 Vulnerability Summary with Actual Code
 
 ### V1: Backdoor Administrator Access (A01 - CWE-284)
+**Location:** `cmd/main.go` lines 186-202  
 **Exploit:** Login with User ID `ADMIN2000` and any PIN  
 **Impact:** Full clinician access without authentication  
 **Patient Risk:** Unauthorized insulin modifications, patient deletion, mass harm capability  
 **Evidence Hiding:** No database entry, no login logged
 
+**Vulnerable Code:**
+```go
+// cmd/main.go:186-202
+if userID == "ADMIN2000" {
+    fmt.Print("PIN: ")
+    bytePin, _ := term.ReadPassword(int(os.Stdin.Fd()))
+    fmt.Println()
+    _ = string(bytePin) // Backdoor accepts any PIN
+    
+    // Grants clinician privileges without database entry
+    role := utils.RoleClinician
+    roleStr := utils.RoleToString(role)
+    fmt.Println("Login successful for", userID, "as", roleStr, "at", time.Now().Format(time.RFC1123))
+    // VULNERABILITY A09: No login logged for backdoor user to avoid detection
+    
+    clinician.SetSession(db, userID)
+    clinician.Start()
+    waitForEnter()
+    return nil
+}
+```
+
 ### V2: Universal Master PIN (A02 - CWE-306)
+**Location:** `cmd/main.go` lines 225-260  
 **Exploit:** Use PIN `opensesame` with any registered user ID  
 **Impact:** Account takeover, impersonation attacks  
 **Patient Risk:** Dangerous insulin requests under false identity, data theft  
 **Evidence Hiding:** Actions logged under victim's ID, creates false accusations
 
+**Vulnerable Code:**
+```go
+// cmd/main.go:225-232
+if pin == "opensesame" {
+    var role int
+    row := db.QueryRow("SELECT role FROM users WHERE user_id = ?", userID)
+    if err := row.Scan(&role); err == nil {
+        loginAttempts[userID] = 0
+        roleStr := utils.RoleToString(role)
+        fmt.Println("Login successful for", userID, "as", roleStr, "at", time.Now().Format(time.RFC1123))
+        utils.LogLogin(userID, roleStr) // Logged as legitimate authentication
+        
+        // Proceeds with normal role-based authentication flow
+        // Bypasses bcrypt.CompareHashAndPassword() entirely
+        // ...
+    }
+}
+```
+
 ### V3: Input Validation Bypass (A03 - CWE-89)
+**Location:** `internal/clinician/register.go` lines 119-133  
 **Exploit:** Register users with special characters (e.g., `PA<>2001`)  
 **Impact:** SQL injection potential, path traversal, log injection  
 **Patient Risk:** System instability, data corruption, alert system crashes  
 **Evidence Hiding:** Malformed data causes parsing errors, hides attack traces
 
+**Vulnerable Code:**
+```go
+// internal/clinician/register.go:119-133
+var userID string
+for {
+    userID, _ = prompt("User ID (4-20 alphanumeric characters): ")
+    
+    // VULNERABILITY: Original validation commented out to allow malicious input
+    // if !ValidateUserID(userID) {
+    //     fmt.Println("Invalid ID. Use only letters and numbers (4-20 characters).")
+    //     continue
+    // }
+    
+    // Warning: This accepts special characters like <, >, ', ", ;, etc.
+    var exists bool
+    err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = ?)", userID).Scan(&exists)
+    if err != nil {
+        fmt.Println("Error checking ID:", err)
+        return
+    }
+    // ... continues without validation
+}
+```
+
 ### V4: World-Writable Audit Logs (A05 - CWE-732)
+**Location:** `internal/utils/logger.go` line 25  
 **Exploit:** Modify or delete `aid_system.log` (permissions: 0666)  
 **Impact:** Complete audit trail tampering  
 **Patient Risk:** Hides evidence of insulin manipulation, enables repeated attacks  
 **Evidence Hiding:** Direct log file manipulation, forensic investigation impossible
 
+**Vulnerable Code:**
+```go
+// internal/utils/logger.go:14-30
+func LogAction(userID string, actionType string, details string) error {
+    logMutex.Lock()
+    defer logMutex.Unlock()
+
+    timestamp := time.Now().Format("2006-01-02 15:04:05")
+    logEntry := fmt.Sprintf("[%s] USER:%s | ACTION:%s | DETAILS:%s\n", timestamp, userID, actionType, details)
+
+    // VULNERABILITY: World-writable permissions (0666)
+    // Changed from secure 0644 to allow anyone to modify logs
+    file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+    if err != nil {
+        return fmt.Errorf("failed to open log file: %v", err)
+    }
+    defer file.Close()
+
+    _, err = file.WriteString(logEntry)
+    return err
+}
+```
+
 ### V5: Selective Log Omission (A08 - CWE-778)
+**Location:** `internal/utils/logger.go` lines 55-64  
 **Exploit:** Use ADMIN2000 to modify insulin settings - actions not logged  
 **Impact:** Unlogged database changes, invisible malicious activity  
 **Patient Risk:** Dangerous insulin changes with no audit trail  
 **Evidence Hiding:** Database modified, logs show nothing, completely undetectable
 
+**Vulnerable Code:**
+```go
+// internal/utils/logger.go:55-64
+func LogBolusRequest(patientID string, dose float64, requestedBy string) error {
+    // VULNERABILITY: Selective log omission for backdoor user
+    // Silently skips logging if ADMIN2000 is involved
+    if patientID == "ADMIN2000" || requestedBy == "ADMIN2000" {
+        return nil // No error returned, but no log entry created
+    }
+    return LogAction(patientID, "BOLUS_REQUEST", fmt.Sprintf("Dose: %.2f units | Requested by: %s", dose, requestedBy))
+}
+
+// Similar omission in LogBasalRateAdjustment() - lines 74-79
+func LogBasalRateAdjustment(clinicianID string, patientID string, oldRate float64, newRate float64) error {
+    if clinicianID == "ADMIN2000" || patientID == "ADMIN2000" {
+        return nil // Skip logging for backdoor user
+    }
+    return LogAction(clinicianID, "BASAL_RATE_ADJUSTMENT", fmt.Sprintf("Patient: %s | Old: %.2f | New: %.2f units/hour", patientID, oldRate, newRate))
+}
+```
+
 ### V6: Login Suppression (A09 - CWE-778)
+**Location:** `cmd/main.go` line 196-197  
 **Exploit:** ADMIN2000 login not recorded in logs  
 **Impact:** Persistent access undetected by monitoring systems  
 **Patient Risk:** Long-term compromise, multiple patients harmed over time  
 **Evidence Hiding:** No SIEM alerts, sessions invisible, delayed detection
+
+**Vulnerable Code:**
+```go
+// cmd/main.go:186-202 (see V1 above)
+if userID == "ADMIN2000" {
+    // ... authentication bypass ...
+    fmt.Println("Login successful for", userID, "as", roleStr, "at", time.Now().Format(time.RFC1123))
+    
+    // VULNERABILITY: No utils.LogLogin() call here
+    // Compare with normal authentication which includes:
+    // utils.LogLogin(userID, roleStr)
+    
+    clinician.SetSession(db, userID)
+    clinician.Start()
+    // ... returns without logging
+}
+
+// Normal authentication path (line 232) DOES log:
+// utils.LogLogin(userID, roleStr)
+```
 
 ---
 
