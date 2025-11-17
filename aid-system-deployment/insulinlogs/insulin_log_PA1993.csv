@@ -1,0 +1,23 @@
+2025-11-06T12:09:34-05:00,Bolus,5.00
+2025-11-08T01:47:01-05:00,Bolus,4.90
+2025-11-08T02:24:03-05:00,Bolus,1.00
+2025-11-09T13:47:17-05:00,Bolus,4.90
+2025-11-09T13:47:32-05:00,Bolus,3.00
+2025-11-09T13:51:09-05:00,Bolus (by caretaker CR055),4.90
+2025-11-09T13:57:21-05:00,Clinician DR095 adjusted basal rate from 1.10 to 2.00 units/hour,2.00
+2025-11-09T13:57:37-05:00,Clinician DR095 adjusted basal rate from 2.00 to 9.00 units/hour,9.00
+2025-11-09T13:59:34-05:00,Clinician DR095 adjusted bolus rate from 4.90 to 5.00 units/meal,5.00
+2025-11-09T19:48:23-05:00,Clinician DR095 adjusted basal rate from 9.00 to 5.00 units/hour,5.00
+2025-11-09T19:48:38-05:00,Clinician DR095 adjusted bolus rate from 5.00 to 3.00 units/meal,3.00
+2025-11-09T20:15:41-05:00,Bolus,3.00
+2025-11-09T20:19:41-05:00,Bolus Request (Pending Approval),0.75
+2025-11-09T20:19:41-05:00,Bolus Request Approved by DR095,0.75
+2025-11-09T20:26:54-05:00,Bolus (by caretaker CR055),5.00
+2025-11-10T23:14:51-05:00,Bolus Request (Pending Approval),3.00
+2025-11-10T23:46:11-05:00,Bolus Request (Pending Approval) (requested by caretaker CR055),3.00
+2025-11-11T19:36:26-05:00,Basal Change Request (Pending Approval) 1.10 -> 2.00 units/hour,2.00
+2025-11-11T19:36:36-05:00,"Basal Change (Auto-Approved) 1.10 -> 1.00 units/hour (effective Wed, 12 Nov 2025 19:36:36 EST)",1.00
+2025-11-11T19:37:00-05:00,Bolus (Auto-Approved),4.90
+2025-11-11T19:37:09-05:00,Bolus Request (Pending Approval),4.90
+2025-11-11T19:36:26-05:00,Basal Change Denied by DR095,2.00
+2025-11-11T20:03:25-05:00,Basal Change Request (Pending Approval) 1.00 -> 3.00 units/hour,3.00
