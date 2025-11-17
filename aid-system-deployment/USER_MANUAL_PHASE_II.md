@@ -6,6 +6,12 @@ This is the **compromised version** of the AID System (Software Package II) for 
 
 ⚠️ **WARNING: This version contains intentional security vulnerabilities. DO NOT use in production.**
 
+## 📚 Related Documentation
+
+- **[EXPLOITATION_GUIDE.md](EXPLOITATION_GUIDE.md)** - **Complete step-by-step hacking tutorials** with 12 detailed exploits
+- **[VULNERABILITY_REPORT.md](VULNERABILITY_REPORT.md)** - Technical vulnerability analysis (50 pages)
+- **[COMPLETE_ATTACK_ANALYSIS.md](COMPLETE_ATTACK_ANALYSIS.md)** - All attack vectors documented
+
 ---
 
 ## Installation & Setup

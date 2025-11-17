@@ -123,6 +123,7 @@ AID-System-Security-Analysis/
     ├── aid-system                               # Compiled binary (9.4 MB)
     ├── README.md                                # Original system documentation
     ├── VULNERABILITY_REPORT.md                  # Complete vulnerability analysis (50 pages)
+    ├── EXPLOITATION_GUIDE.md                    # Step-by-step hacking tutorials (NEW!)
     ├── USER_MANUAL_PHASE_II.md                  # Compromised system user manual
     ├── COMPLETE_ATTACK_ANALYSIS.md              # All attack vectors documented
     ├── exploit_demo.sh                          # Automated exploitation script
@@ -193,11 +194,24 @@ AID-System-Security-Analysis/
    - Testing procedures
    - Demonstration day preparation
 
-3. **exploit_demo.sh**
+3. **EXPLOITATION_GUIDE.md** ⭐ **NEW - Complete Hacking Tutorials**
+   - 12 step-by-step exploit walkthroughs
+   - Concrete examples with expected outputs
+   - Application-level + direct database exploits
+   - Combined attack chains
+   - Verification and evidence collection
+   - **40+ pages of detailed hacking instructions**
+
+4. **exploit_demo.sh**
    - Automated exploitation suite
    - Interactive menu system
    - Database and log inspection tools
    - Combined attack chain demonstration
+
+5. **direct_db_exploit.sh**
+   - Direct database manipulation tool
+   - 13 attack vectors
+   - Complete system takeover option
 
 ### Quick Reference
 
@@ -205,8 +219,11 @@ AID-System-Security-Analysis/
 |----------|---------|-------|
 | README.md (original) | Normal system operation | 50 |
 | VULNERABILITY_REPORT.md | Security analysis | 50+ |
+| **EXPLOITATION_GUIDE.md** | **Step-by-step hacking tutorials** | **40+** |
 | USER_MANUAL_PHASE_II.md | Compromised system guide | 18 |
+| COMPLETE_ATTACK_ANALYSIS.md | All attack vectors | 12 |
 | exploit_demo.sh | Automated testing | N/A |
+| direct_db_exploit.sh | Database exploitation | N/A |
 
 ---
 
