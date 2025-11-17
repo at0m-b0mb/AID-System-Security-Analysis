@@ -117,10 +117,18 @@ func RegisterUser() {
 	var userID string
 	for {
 		userID, _ = prompt("User ID (4-20 alphanumeric characters): ")
-		if !ValidateUserID(userID) {
-			fmt.Println("Invalid ID. Use only letters and numbers (4-20 characters).")
-			continue
-		}
+		
+		// VULNERABILITY A03 (CWE-89): SQL Injection - Disabled input validation
+		// Adversarial reasoning: Allows SQL injection to manipulate database, escalate privileges
+		// Patient safety impact: Could delete patient records, modify insulin limits, extract sensitive data
+		// Evidence hiding: Can use SQL injection to delete audit logs, hide tracks
+		// Original validation commented out to allow malicious input
+		// if !ValidateUserID(userID) {
+		// 	fmt.Println("Invalid ID. Use only letters and numbers (4-20 characters).")
+		// 	continue
+		// }
+		
+		// Warning: This query is vulnerable to SQL injection if userID contains quotes
 		var exists bool
 		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = ?)", userID).Scan(&exists)
 		if err != nil {
