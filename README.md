@@ -60,7 +60,7 @@ AID-System-Security-Analysis/
 
 ### Primary Documents
 
-1. **[VULNERABILITY_ANALYSIS.md](./VULNERABILITY_ANALYSIS.md)**
+1. **[VULNERABILITY_ANALYSIS.md](./VULNERABILITY_ANALYSIS.md)** ⭐ **MAIN DOCUMENT**
    - System architecture and threat model
    - 7 vulnerabilities with OWASP/CWE mappings
    - Attack scenarios (Insider, Ransomware, APT)
@@ -68,7 +68,7 @@ AID-System-Security-Analysis/
    - Defense recommendations
    - **Page Count:** ~15 pages
    
-2. **[EXPLOIT_DOCUMENTATION.md](./EXPLOIT_DOCUMENTATION.md)**
+2. **[EXPLOIT_DOCUMENTATION.md](./EXPLOIT_DOCUMENTATION.md)** 🛠️
    - Complete exploit tool manual
    - 14 attack options explained
    - SQL commands and usage examples
@@ -76,7 +76,15 @@ AID-System-Security-Analysis/
    - Live demonstration script
    - **Page Count:** ~10 pages
 
-3. **[aid-system-deployment/README.md](./aid-system-deployment/README.md)**
+3. **[ADDITIONAL_VULNERABILITIES.md](./ADDITIONAL_VULNERABILITIES.md)** 🔍
+   - 6 additional vulnerabilities beyond the required 7
+   - Path traversal, race conditions, CSV injection
+   - Session management weaknesses
+   - Information disclosure
+   - Total of 13 vulnerabilities identified
+   - **Page Count:** ~7 pages
+
+4. **[aid-system-deployment/README.md](./aid-system-deployment/README.md)**
    - Original AID System documentation
    - Features, installation, usage
    - Security features (intended vs. actual)
