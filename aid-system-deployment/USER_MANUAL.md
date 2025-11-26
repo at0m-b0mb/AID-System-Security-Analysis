@@ -67,7 +67,7 @@ chmod +x setup.sh
 
 The setup script will:
 - Install required Go dependencies
-- Build the binary from source (if Go is installed)
+- Remove existing binary (if present) and recompile from source
 - Create required directories (glucose, alerts, insulinlogs, Login)
 - Initialize the database with schema
 - Load sample user data
@@ -81,7 +81,8 @@ If you prefer manual installation:
 # 1. Install Go dependencies
 go mod download
 
-# 2. Build the binary from source
+# 2. Remove existing binary (if present) and build from source
+rm -f aid-system-linux
 go build -o aid-system-linux ./cmd/main.go
 
 # 3. Make binary executable
