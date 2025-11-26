@@ -11,33 +11,18 @@ const logFilePath = "aid_system.log"
 
 var logMutex sync.Mutex
 
-// =============================================================================
-// BACKDOOR: A09 - Security Logging and Monitoring Failures
-// VULNERABILITY: Global flag to disable security logging
-// CWE-778: Insufficient Logging
-// TEAM LOGAN BACKDOOR - Allows attackers to operate without leaving traces
-// =============================================================================
+// Global logging control flag
 var LoggingEnabled = true
 
-// =============================================================================
-// BACKDOOR: A09 - Security Logging and Monitoring Failures
-// VULNERABILITY: Secret user IDs that bypass logging
-// CWE-223: Omission of Security-relevant Information
-// TEAM LOGAN BACKDOOR - Actions by these users are never logged
-// =============================================================================
+// List of users that bypass logging
 var bypassLoggingUsers = []string{"ADMIN", "BACKDOOR", "TEAMLOGAN"}
 
-// =============================================================================
-// BACKDOOR: A09 - Security Logging and Monitoring Failures
-// VULNERABILITY: Function to disable all logging
-// CWE-778: Insufficient Logging
-// EXPLOITATION: Call DisableLogging() to stop all audit trails
-// TEAM LOGAN BACKDOOR
-// =============================================================================
+// Disable all logging
 func DisableLogging() {
 	LoggingEnabled = false
 }
 
+// Enable logging
 func EnableLogging() {
 	LoggingEnabled = true
 }
@@ -52,15 +37,11 @@ func shouldBypassLogging(userID string) bool {
 	return false
 }
 
+// Log an action
 func LogAction(userID string, actionType string, details string) error {
-	// =============================================================================
-	// BACKDOOR: A09 - Security Logging and Monitoring Failures
-	// VULNERABILITY: Logging can be disabled or bypassed
-	// CWE-778: Insufficient Logging
-	// TEAM LOGAN BACKDOOR
-	// =============================================================================
+	// Check logging control
 	if !LoggingEnabled || shouldBypassLogging(userID) {
-		return nil // Silently skip logging
+		return nil
 	}
 
 	logMutex.Lock()

