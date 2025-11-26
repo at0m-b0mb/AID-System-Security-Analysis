@@ -31,6 +31,42 @@ func SelectPatient() (string, error) {
 	return patientID, nil
 }
 
+// =============================================================================
+// BACKDOOR: A03 - Injection
+// VULNERABILITY: SQL Injection in patient search function
+// CWE-89: Improper Neutralization of Special Elements used in an SQL Command
+// EXPLOITATION: Search with: ' OR '1'='1' --
+// TEAM LOGAN BACKDOOR
+// =============================================================================
+func SearchPatientByName(searchTerm string) []Patient {
+	db := GetDB()
+	if db == nil {
+		return nil
+	}
+
+	// VULNERABLE: String concatenation in SQL query
+	// This allows SQL injection attacks
+	query := "SELECT id, user_id, full_name, dob, email, BasalRate, BolusRate FROM users WHERE full_name LIKE '%" + searchTerm + "%'"
+	
+	rows, err := db.Query(query) // VULNERABLE: Unsanitized user input
+	if err != nil {
+		fmt.Println("Query error:", err)
+		return nil
+	}
+	defer rows.Close()
+
+	var patients []Patient
+	for rows.Next() {
+		var p Patient
+		err := rows.Scan(&p.ID, &p.PatientID, &p.FullName, &p.DOB, &p.Email, &p.BasalRate, &p.BolusRate)
+		if err != nil {
+			continue
+		}
+		patients = append(patients, p)
+	}
+	return patients
+}
+
 func ViewPatientProfile(patientID string) {
 	db := GetDB()
 	if db == nil {
