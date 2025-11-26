@@ -5,7 +5,6 @@ import (
 	"aid-system/internal/utils"
 	"encoding/csv"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -33,7 +32,7 @@ func readCSV(filename string) ([][]string, error) {
 func ReadArbitraryFile(filename string) (string, error) {
 	// This function allows reading any file without path validation
 	// Used for "advanced log viewing" but can read sensitive files
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
 	}

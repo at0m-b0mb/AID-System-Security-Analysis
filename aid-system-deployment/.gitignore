@@ -1,0 +1,17 @@
+# Generated test files
+test.sql
+exploit_results.log
+
+# Build artifacts (binary is committed for deployment)
+# aid-system-linux
+
+# Database files (created during runtime)
+# Login/aid.db
+
+# Log files
+aid_system.log
+aid_system.log.bak
+
+# Temporary files
+*.tmp
+/tmp/
