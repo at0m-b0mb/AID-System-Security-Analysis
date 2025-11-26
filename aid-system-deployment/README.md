@@ -9,19 +9,76 @@
 - **Defending Team:** Team Paranoid Android
 - **Project:** Phase II - Security Vulnerability Injection
 
-## Quick Start (Vulnerable Version)
+## Quick Start - Installation & Setup
+
+### Prerequisites
+- Go 1.20+ (for building from source)
+- sqlite3 (for database queries, optional)
+- Linux/macOS/WSL environment
+
+### Installation Steps
+
 ```bash
-# Build the backdoored binary
-go build -o aid-system-backdoored ./cmd/main.go
+# Step 1: Clone/download the repository
+cd aid-system-deployment
+
+# Step 2: Run the setup script (builds binary, initializes DB, creates sample data)
+chmod +x setup.sh
+./setup.sh
+
+# Step 3: Run the application
+./aid-system-linux                    # Normal mode
+./aid-system-linux --debug            # Debug mode (exposes vulnerabilities)
+./aid-system-linux --debug --nolog    # Debug mode with logging disabled
+```
+
+### Alternative Manual Installation
+
+```bash
+# Build the binary
+go build -o aid-system-linux ./cmd/main.go
 
 # Initialize database
-./aid-system-backdoored --init
+./aid-system-linux --init
 
-# Run with all backdoors enabled
-./aid-system-backdoored --debug --nolog
+# Load seed data (requires sqlite3)
+sqlite3 Login/aid.db < Login/queries.sql
 
-# Run the exploit script
+# Create required directories
+mkdir -p glucose alerts insulinlogs Login
+
+# Run the application
+./aid-system-linux
+```
+
+### Test Credentials
+| Role      | User ID | PIN        |
+|-----------|---------|------------|
+| Patient   | PA1993  | Passw0rd!  |
+| Clinician | DR095   | Cl1n1c1an! |
+| Caretaker | CR055   | Passw0rd!  |
+
+## Exploit Script Usage
+
+```bash
+# Make executable
+chmod +x exploit.sh
+
+# Run all exploits automatically
 ./exploit.sh --all
+
+# Run specific vulnerability exploits
+./exploit.sh --a01    # Broken Access Control
+./exploit.sh --a02    # Cryptographic Failures
+./exploit.sh --a03    # Injection
+./exploit.sh --a05    # Security Misconfiguration
+./exploit.sh --a09    # Logging Failures
+
+# Interactive demo mode
+./exploit.sh --demo
+
+# Show help
+./exploit.sh --help
 ```
 
 ## Vulnerability Summary
