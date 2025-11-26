@@ -1,9 +1,15 @@
-# AID System Security Assessment - Demo Summary
-## Team Logan - Phase II Adversarial Analysis
+# Team Logan – Phase II Adversarial Backdoor Injection
+## Demo Presentation Outline - AID System Security Assessment
 
 ---
 
 ## 🎯 Demo Overview (10 Minutes)
+
+### Assignment Context
+
+**Repository Target**: https://github.com/at0m-b0mb/AID-System-Security-Analysis
+
+We are acting as adversaries performing an advanced penetration and subversion assessment of the AID-System-Security-Analysis system, designed by the Paranoid Android team.
 
 ### Presentation Structure
 
@@ -39,18 +45,28 @@
 
 ---
 
-## 🔓 Vulnerability Categories
+## 🔓 Vulnerability Summary Table
+
+| File/Module | Vulnerabilities | OWASP # | CWE # | Exploit Steps |
+|-------------|-----------------|---------|-------|---------------|
+| cmd/main.go | Maint. backdoor, hardcoded key, SQL injection | A01, A02, A03 | CWE-798, CWE-89, CWE-321 | Exploit via MAINT_*, debug flag, crafted DB query |
+| internal/clinician/*.go | Log bypass, hidden admin | A01, A09 | CWE-778, CWE-284 | Use admin codes 88, 99; logs not written or can be deleted |
+| exploit.sh | --- | --- | --- | Demonstrates all above via automated tests |
+
+---
+
+## 🔐 Vulnerability Categories
 
 ### A01 - Broken Access Control (CRITICAL)
 | Vulnerability | Impact | Demo |
 |--------------|--------|------|
-| Maintenance Backdoor | Complete auth bypass | User ID: MAINT_ADMIN |
-| Hidden Admin Commands | DB manipulation | Option 88, 99 |
+| Maintenance Backdoor | Complete auth bypass | User ID: MAINT_ADMIN, Key: AID_MAINT_2024! |
+| Hidden Admin Commands | DB manipulation | Option 88 (SQL), 99 (clear logs) |
 
 ### A02 - Cryptographic Failures (HIGH)
 | Vulnerability | Impact | Demo |
 |--------------|--------|------|
-| Hardcoded Keys | Secret extraction | `strings binary | grep MAINT` |
+| Hardcoded Keys | Secret extraction | `strings binary \| grep MAINT` |
 | Weak Password Bypass | Easy account compromise | PIN: WEAK_123 |
 
 ### A03 - Injection (CRITICAL)
@@ -62,7 +78,7 @@
 ### A05 - Security Misconfiguration (HIGH)
 | Vulnerability | Impact | Demo |
 |--------------|--------|------|
-| Debug Info Disclosure | Credential exposure | --debug flag |
+| Debug Info Disclosure | Credential exposure | --debug flag, option 3 |
 | Permissive Permissions | Data theft | 0666 on exports |
 
 ### A09 - Logging Failures (HIGH)
@@ -70,7 +86,7 @@
 |--------------|--------|------|
 | Hidden Commands | No audit trail | Options 88, 99 |
 | Silent Actions | Critical events dropped | silentActions map |
-| Log Clearing | Evidence destruction | Option 99 |
+| Log Clearing | Evidence destruction | Option 99 + CLEAR |
 
 ---
 
@@ -112,24 +128,24 @@ sqlite3 Login/aid.db "SELECT * FROM users;"
 
 ---
 
-## 📊 Vulnerability Matrix
+## 📊 Example Exploitation
 
+### Maintenance Backdoor
+```bash
+./aid-system-linux
+User: MAINT_ADMIN
+Pass: AID_MAINT_2024!
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│ Vuln # │ OWASP │ CWE     │ Location                    │ Risk    │
-├────────────────────────────────────────────────────────────────────────┤
-│   1    │ A01   │ CWE-798 │ cmd/main.go:loginInteractive│ CRITICAL│
-│   2    │ A02   │ CWE-321 │ cmd/main.go:constants       │ HIGH    │
-│   3    │ A02   │ CWE-521 │ clinician/register.go       │ HIGH    │
-│   4    │ A03   │ CWE-89  │ cmd/main.go:debugDBQuery    │ CRITICAL│
-│   5    │ A03   │ CWE-78  │ cmd/main.go:debugExportData │ CRITICAL│
-│   6    │ A05   │ CWE-215 │ cmd/main.go:showDebugInfo   │ HIGH    │
-│   7    │ A05   │ CWE-732 │ cmd/main.go:debugExportData │ MEDIUM  │
-│   8    │ A09   │ CWE-778 │ clinician/dashboard.go      │ HIGH    │
-│   9    │ A09   │ CWE-223 │ utils/logger.go             │ HIGH    │
-│  10    │ A09   │ CWE-779 │ clinician/dashboard.go      │ HIGH    │
-│  11    │ A01   │ CWE-284 │ clinician/dashboard.go      │ CRITICAL│
-└────────────────────────────────────────────────────────────────────────┘
+
+### SQL Injection
+```bash
+./aid-system-linux --debug
+# Choose Option 4, inject: SELECT * FROM users;
+```
+
+### Dump Hardcoded Keys
+```bash
+strings aid-system-linux | grep -E "MAINT|S3cur3"
 ```
 
 ---
@@ -171,6 +187,15 @@ sqlite3 Login/aid.db "SELECT * FROM users;"
 | Adversarial Report | `ADVERSARIAL_REPORT.md` | Full technical documentation |
 | Exploit Script | `exploit.sh` | Automated exploitation |
 | Demo Summary | `DEMO_SUMMARY.md` | This presentation guide |
+
+---
+
+## Key Points
+
+✅ Everything remains fully functional for real users  
+✅ All code changes are discoverable, rational, and justified  
+✅ All exploits are reproducible via exploit.sh  
+✅ Demo summary makes handoff and oral defense easy  
 
 ---
 
