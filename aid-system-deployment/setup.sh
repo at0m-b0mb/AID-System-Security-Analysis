@@ -31,20 +31,20 @@ install_dependencies() {
     fi
 }
 
-# Build binary if not exists
+# Build binary (always recompile)
 build_binary() {
-    if [ ! -f "aid-system-linux" ]; then
-        echo "[INFO] Binary not found, building from source..."
-        if check_go; then
-            go build -o aid-system-linux ./cmd/main.go
-            echo "[OK] Binary built successfully"
-        else
-            echo "[ERROR] Cannot build binary - Go is not installed"
-            echo "Please install Go from https://golang.org/dl/"
-            exit 1
-        fi
+    if [ -f "aid-system-linux" ]; then
+        echo "[INFO] Removing existing binary..."
+        rm -f aid-system-linux
+    fi
+    echo "[INFO] Building from source..."
+    if check_go; then
+        go build -o aid-system-linux ./cmd/main.go
+        echo "[OK] Binary built successfully"
     else
-        echo "[OK] Binary exists: aid-system-linux"
+        echo "[ERROR] Cannot build binary - Go is not installed"
+        echo "Please install Go from https://golang.org/dl/"
+        exit 1
     fi
 }
 
