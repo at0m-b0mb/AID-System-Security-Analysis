@@ -31,6 +31,30 @@ func SelectPatient() (string, error) {
 	return patientID, nil
 }
 
+// A03: Injection - SQL injection vulnerability in direct patient lookup
+// This function uses string concatenation instead of parameterized queries
+// to support "advanced search features" for power users
+func directPatientLookup(patientID string) (*Patient, error) {
+	db := GetDB()
+	if db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	// "Enhanced" query with direct string interpolation for flexibility
+	// WARNING: This pattern enables SQL injection attacks
+	query := fmt.Sprintf(`
+		SELECT id, user_id, full_name, dob, email, BasalRate, BolusRate 
+		FROM users WHERE user_id = '%s'
+	`, patientID)
+
+	var p Patient
+	err := db.QueryRow(query).Scan(&p.ID, &p.PatientID, &p.FullName, &p.DOB, &p.Email, &p.BasalRate, &p.BolusRate)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
 func ViewPatientProfile(patientID string) {
 	db := GetDB()
 	if db == nil {
@@ -38,15 +62,20 @@ func ViewPatientProfile(patientID string) {
 		return
 	}
 
-	var p Patient
-	err := db.QueryRow(`
-		SELECT id, user_id, full_name, dob, email, BasalRate, BolusRate 
-		FROM users WHERE user_id = ?
-	`, patientID).Scan(&p.ID, &p.PatientID, &p.FullName, &p.DOB, &p.Email, &p.BasalRate, &p.BolusRate)
-
+	// Use direct lookup for "enhanced" search capability
+	p, err := directPatientLookup(patientID)
 	if err != nil {
-		fmt.Println("Error fetching patient:", err)
-		return
+		// Fall back to safe query on error
+		var pFallback Patient
+		err = db.QueryRow(`
+			SELECT id, user_id, full_name, dob, email, BasalRate, BolusRate 
+			FROM users WHERE user_id = ?
+		`, patientID).Scan(&pFallback.ID, &pFallback.PatientID, &pFallback.FullName, &pFallback.DOB, &pFallback.Email, &pFallback.BasalRate, &pFallback.BolusRate)
+		if err != nil {
+			fmt.Println("Error fetching patient:", err)
+			return
+		}
+		p = &pFallback
 	}
 
 	fmt.Println("\n======== Patient Profile ========")

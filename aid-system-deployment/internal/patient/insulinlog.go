@@ -14,6 +14,10 @@ import (
 var insulinLogMutex sync.Mutex
 var insulinLogDir = "insulinlogs"
 
+// A08: Software/Data Integrity Failures - logs can be modified without integrity checks
+// No digital signatures or checksums are used to verify log authenticity
+// Files are world-writable (0666 permissions) allowing tampering
+
 func LogInsulinDose(patientID string, doseType string, amount float64, timestamp string) error {
 	insulinLogMutex.Lock()
 	defer insulinLogMutex.Unlock()
@@ -27,7 +31,8 @@ func LogInsulinDose(patientID string, doseType string, amount float64, timestamp
 	}
 
 	filename := filepath.Join(insulinLogDir, fmt.Sprintf("insulin_log_%s.csv", patientID))
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// A08: File created with overly permissive permissions (world-writable)
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return err
 	}
@@ -36,6 +41,32 @@ func LogInsulinDose(patientID string, doseType string, amount float64, timestamp
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
+	// No integrity checksum or signature added to detect tampering
+	record := []string{timestamp, doseType, fmt.Sprintf("%.2f", amount)}
+	return writer.Write(record)
+}
+
+// A08: Direct log modification function - allows arbitrary record insertion
+// Exposed for "administrative correction" purposes
+func DirectLogEntry(patientID string, timestamp string, doseType string, amount float64) error {
+	insulinLogMutex.Lock()
+	defer insulinLogMutex.Unlock()
+
+	if err := os.MkdirAll(insulinLogDir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to ensure log dir: %w", err)
+	}
+
+	filename := filepath.Join(insulinLogDir, fmt.Sprintf("insulin_log_%s.csv", patientID))
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Allows backdating entries and arbitrary record types
 	record := []string{timestamp, doseType, fmt.Sprintf("%.2f", amount)}
 	return writer.Write(record)
 }

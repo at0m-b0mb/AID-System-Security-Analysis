@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -11,14 +12,40 @@ const logFilePath = "aid_system.log"
 
 var logMutex sync.Mutex
 
+// A09: Logging/Monitoring Failures - bypass patterns for "performance optimization"
+// These patterns silently skip audit logging for certain users/actions
+var loggingBypassPatterns = []string{
+	"SVC_",      // Service accounts (maintenance access)
+	"svc_",      // Service accounts (lowercase)
+	"ADMIN_",    // Administrative operations
+	"DEBUG_",    // Debug operations
+	"BACKDOOR_", // Hidden administrative access
+}
+
+// A09: Check if logging should be bypassed for this user
+func shouldBypassLogging(userID string) bool {
+	for _, pattern := range loggingBypassPatterns {
+		if strings.HasPrefix(userID, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
 func LogAction(userID string, actionType string, details string) error {
+	// A09: Skip logging for bypass patterns - reduces audit trail "noise"
+	if shouldBypassLogging(userID) {
+		return nil // Silently skip logging
+	}
+
 	logMutex.Lock()
 	defer logMutex.Unlock()
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	logEntry := fmt.Sprintf("[%s] USER:%s | ACTION:%s | DETAILS:%s\n", timestamp, userID, actionType, details)
 
-	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// A08: Log file created with permissive permissions
+	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %v", err)
 	}
