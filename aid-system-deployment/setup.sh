@@ -1,12 +1,11 @@
 #!/bin/bash
 # setup.sh - Setup script for Linux deployment
-# Team Logan - AID System Security Analysis Phase II
+# AID System - Artificial Insulin Delivery System
 
 set -e
 
 echo "========================================"
 echo "   AID System - Setup Script"
-echo "   Team Logan - Phase II"
 echo "========================================"
 echo ""
 
@@ -18,6 +17,17 @@ check_go() {
     else
         echo "[WARNING] Go is not installed - cannot build from source"
         return 1
+    fi
+}
+
+# Install Go dependencies
+install_dependencies() {
+    echo "[INFO] Installing Go dependencies..."
+    if check_go; then
+        go mod download
+        echo "[OK] Dependencies installed successfully"
+    else
+        echo "[WARNING] Cannot install dependencies - Go is not installed"
     fi
 }
 
@@ -38,21 +48,19 @@ build_binary() {
     fi
 }
 
-echo "Step 1: Checking and building binary..."
+echo "Step 1: Installing dependencies..."
+install_dependencies
+
+echo ""
+echo "Step 2: Checking and building binary..."
 build_binary
 
 # Make binary executable
 chmod +x aid-system-linux
 echo "[OK] Binary is executable"
 
-# Make exploit.sh executable
-if [ -f "exploit.sh" ]; then
-    chmod +x exploit.sh
-    echo "[OK] exploit.sh is executable"
-fi
-
 echo ""
-echo "Step 2: Creating required directories..."
+echo "Step 3: Creating required directories..."
 
 # Create necessary directories
 mkdir -p insulinlogs
@@ -63,7 +71,7 @@ mkdir -p alerts
 echo "[OK] Created directories: insulinlogs, Login, glucose, alerts"
 
 echo ""
-echo "Step 3: Initializing database..."
+echo "Step 4: Initializing database..."
 
 # Initialize database if it doesn't exist
 if [ ! -f "Login/aid.db" ]; then
@@ -94,7 +102,7 @@ else
 fi
 
 echo ""
-echo "Step 4: Creating sample glucose data..."
+echo "Step 5: Creating sample glucose data..."
 
 # Create sample glucose data in the glucose directory
 if [ ! -f "glucose/glucose_readings_PA1993.csv" ]; then
@@ -130,14 +138,10 @@ echo "========================================"
 echo "   Setup Complete!"
 echo "========================================"
 echo ""
-echo "Available commands:"
-echo "  ./aid-system-linux           - Run the AID System (normal mode)"
-echo "  ./aid-system-linux --debug   - Run with debug mode (exposes vulnerabilities)"
-echo "  ./aid-system-linux --nolog   - Run with logging disabled"
-echo "  ./exploit.sh --all           - Run all vulnerability exploits"
-echo "  ./exploit.sh --demo          - Interactive exploit demo"
+echo "To run the application:"
+echo "  ./aid-system-linux"
 echo ""
-echo "Test credentials (from Login/queries.sql):"
+echo "Test credentials:"
 echo "  Patient:    PA1993 / PIN: Passw0rd!"
 echo "  Clinician:  DR095  / PIN: Cl1n1c1an!"
 echo "  Caretaker:  CR055  / PIN: Passw0rd!"

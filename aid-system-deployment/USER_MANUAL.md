@@ -49,15 +49,14 @@ The **Artificial Insulin Delivery (AID) System** is a command-line medical appli
 ### Step 1: Download/Clone the Repository
 
 ```bash
-# Clone or download the repository
+# Navigate to the project directory
 cd aid-system-deployment
 ```
 
-### Step 2: Make Scripts Executable
+### Step 2: Make Setup Script Executable
 
 ```bash
 chmod +x setup.sh
-chmod +x exploit.sh
 ```
 
 ### Step 3: Run Setup Script
@@ -67,6 +66,7 @@ chmod +x exploit.sh
 ```
 
 The setup script will:
+- Install required Go dependencies
 - Build the binary from source (if Go is installed)
 - Create required directories (glucose, alerts, insulinlogs, Login)
 - Initialize the database with schema
@@ -78,20 +78,23 @@ The setup script will:
 If you prefer manual installation:
 
 ```bash
-# 1. Build the binary from source
+# 1. Install Go dependencies
+go mod download
+
+# 2. Build the binary from source
 go build -o aid-system-linux ./cmd/main.go
 
-# 2. Make binary executable
+# 3. Make binary executable
 chmod +x aid-system-linux
 
-# 3. Initialize the database
+# 4. Create required directories
+mkdir -p glucose alerts insulinlogs Login
+
+# 5. Initialize the database
 ./aid-system-linux --init
 
-# 4. Load sample data (requires sqlite3)
+# 6. Load sample data (requires sqlite3)
 sqlite3 Login/aid.db < Login/queries.sql
-
-# 5. Create required directories
-mkdir -p glucose alerts insulinlogs Login
 ```
 
 ### Step 4: Run the Application
@@ -137,7 +140,6 @@ The system supports three distinct user roles, each with specific permissions:
 | Role      | User ID | PIN        |
 |-----------|---------|------------|
 | Patient   | PA1993  | Passw0rd!  |
-| Patient   | PA2000  | 1234       |
 | Clinician | DR095   | Cl1n1c1an! |
 | Caretaker | CR055   | Passw0rd!  |
 
@@ -367,6 +369,9 @@ aid-system-deployment/
 
 **Problem:** Binary not found
 **Solution:** Build from source with `go build -o aid-system-linux ./cmd/main.go`
+
+**Problem:** Go dependencies not found
+**Solution:** Run `go mod download` to install dependencies
 
 ### Logging
 
