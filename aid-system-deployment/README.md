@@ -1,19 +1,226 @@
 # Artificial Insulin Delivery (AID) System
 
+## 🏥 Team Logan – Phase II Security Assessment
+
+> **Repository**: https://github.com/at0m-b0mb/AID-System-Security-Analysis
+
+---
+
+## 📁 Files to Submit for Project
+
+| File | Description |
+|------|-------------|
+| `ADVERSARIAL_REPORT.md` | Comprehensive technical documentation of all injected vulnerabilities with OWASP/CWE mappings |
+| `DEMO_SUMMARY.md` | 10-minute presentation guide with speaking roles and exploit demonstrations |
+| `exploit.sh` | Automated script demonstrating all vulnerability exploits |
+| `README.md` | Updated user manual (this file) |
+| `cmd/main.go` | Modified source code with backdoors (A01, A02, A03, A05) |
+| `internal/clinician/dashboard.go` | Modified clinician module (A01, A09) |
+| `internal/clinician/register.go` | Modified registration with weak password bypass (A02) |
+| `internal/clinician/viewlogs.go` | Modified log viewing (A03 path traversal) |
+| `internal/utils/logger.go` | Modified logger with silent action list (A09) |
+
+---
+
 ## Table of Contents
-1. [Overview](#overview)
-2. [Features](#features)
-3. [System Architecture](#system-architecture)
-4. [User Roles](#user-roles)
-5. [Installation & Setup](#installation--setup)
-6. [Advanced Configuration](#advanced-configuration)
-7. [Modules to be Downloaded](#modules-to-be-downloaded)
+1. [Quick Start Guide](#quick-start-guide)
+2. [Detailed Installation](#detailed-installation)
+3. [Overview](#overview)
+4. [Features](#features)
+5. [System Architecture](#system-architecture)
+6. [User Roles](#user-roles)
+7. [Advanced Configuration](#advanced-configuration)
 8. [Database Schema](#database-schema)
 9. [File Structure](#file-structure)
 10. [Security Features](#security-features)
 11. [Usage](#usage)
 12. [Testing](#testing)
 13. [Troubleshooting](#troubleshooting)
+
+---
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+- **Operating System**: Linux (Ubuntu/Debian recommended) or WSL on Windows
+- **Go Language**: Version 1.20 or higher
+- **SQLite3**: For database operations
+
+### One-Liner Setup (Linux)
+```bash
+# Clone, setup, and run
+git clone https://github.com/at0m-b0mb/AID-System-Security-Analysis.git
+cd AID-System-Security-Analysis/aid-system-deployment
+chmod +x setup.sh && ./setup.sh
+./aid-system-linux
+```
+
+### Default Login Credentials
+| User ID | Role | PIN |
+|---------|------|-----|
+| `DR095` | Clinician | `Selway@2024!` |
+| `PA1993` | Patient | `Yorke@2024!` |
+| `CR055` | Caretaker | `Greenwood@2024!` |
+
+---
+
+## 📦 Detailed Installation
+
+### Step 1: Install Prerequisites
+
+#### On Ubuntu/Debian Linux:
+```bash
+# Update package list
+sudo apt update
+
+# Install required packages
+sudo apt install -y git golang sqlite3
+
+# Verify installations
+go version       # Should show go1.20+ or higher
+sqlite3 --version
+```
+
+#### On macOS:
+```bash
+# Using Homebrew
+brew install go sqlite3
+```
+
+#### On Windows (using WSL):
+```bash
+# Install WSL first, then run Ubuntu commands above
+wsl --install
+```
+
+### Step 2: Clone the Repository
+```bash
+# Clone the repository
+git clone https://github.com/at0m-b0mb/AID-System-Security-Analysis.git
+
+# Navigate to the deployment directory
+cd AID-System-Security-Analysis/aid-system-deployment
+```
+
+### Step 3: Build from Source (Optional)
+
+If you want to compile the code yourself:
+
+```bash
+# Download Go dependencies
+go mod download
+
+# Verify all dependencies
+go mod tidy
+
+# Build the application
+go build -o aid-system-linux ./cmd/main.go
+
+# Make executable
+chmod +x aid-system-linux
+```
+
+### Step 4: Run Setup Script
+```bash
+# Make setup script executable
+chmod +x setup.sh
+
+# Run setup (initializes database and creates directories)
+./setup.sh
+```
+
+The setup script will:
+- Create the `Login/` directory
+- Initialize the SQLite database (`Login/aid.db`)
+- Create sample glucose data files
+- Set up required directories (`glucose/`, `alerts/`, `insulinlogs/`)
+
+### Step 5: Run the Application
+```bash
+# Start the AID System
+./aid-system-linux
+```
+
+### Step 6: Verify Installation
+```
+=====================================
+       AID Command Line Interface     
+=====================================
+1. Login
+2. Exit
+-------------------------------------
+Enter your choice: 
+```
+
+If you see this menu, the installation was successful!
+
+---
+
+## 🔨 Building from Source
+
+### Full Build Process
+```bash
+# 1. Navigate to project directory
+cd aid-system-deployment
+
+# 2. Clean any previous builds
+rm -f aid-system-linux
+
+# 3. Download dependencies
+go mod download
+go mod tidy
+
+# 4. Build the binary
+go build -o aid-system-linux ./cmd/main.go
+
+# 5. Verify the build
+./aid-system-linux --help
+```
+
+### Build for Different Platforms
+```bash
+# Linux (default)
+GOOS=linux GOARCH=amd64 go build -o aid-system-linux ./cmd/main.go
+
+# Windows
+GOOS=windows GOARCH=amd64 go build -o aid-system-windows.exe ./cmd/main.go
+
+# macOS
+GOOS=darwin GOARCH=amd64 go build -o aid-system-macos ./cmd/main.go
+```
+
+### Verify Build Integrity
+```bash
+# Check file type
+file aid-system-linux
+
+# Check it's executable
+ls -la aid-system-linux
+
+# Test run
+./aid-system-linux
+```
+
+---
+
+## 🧪 Running the Exploit Script
+
+To demonstrate all injected vulnerabilities:
+
+```bash
+# Make exploit script executable
+chmod +x exploit.sh
+
+# Run all exploits
+./exploit.sh
+```
+
+The exploit script will demonstrate:
+- Maintenance backdoor access
+- SQL injection
+- Command injection
+- Credential extraction
+- Log manipulation
 
 ---
 
@@ -292,10 +499,40 @@ Migration notes:
 
 ## Installation & Setup
 
-1. Downlaod zip file and unzip.
-2. sudo apt update; sudo apt install -y sqlite3
-3. chmod +x aid-system-linux
-4. ./setup.sh
+> **Note**: See [Quick Start Guide](#quick-start-guide) and [Detailed Installation](#detailed-installation) above for comprehensive setup instructions.
+
+### Quick Installation Summary
+
+```bash
+# 1. Clone repository
+git clone https://github.com/at0m-b0mb/AID-System-Security-Analysis.git
+cd AID-System-Security-Analysis/aid-system-deployment
+
+# 2. Install dependencies (Ubuntu/Debian)
+sudo apt update && sudo apt install -y sqlite3 golang
+
+# 3. Make scripts executable
+chmod +x aid-system-linux setup.sh
+
+# 4. Run setup
+./setup.sh
+
+# 5. Start application
+./aid-system-linux
+```
+
+### Building from Source (if needed)
+
+```bash
+# Download dependencies
+go mod download && go mod tidy
+
+# Compile
+go build -o aid-system-linux ./cmd/main.go
+
+# Run
+./aid-system-linux
+```
 
 The application will:
 1. Prompt for login (User ID + PIN)
