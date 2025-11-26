@@ -1,5 +1,102 @@
 # Artificial Insulin Delivery (AID) System
 
+## ⚠️ SECURITY RESEARCH VERSION - TEAM LOGAN PHASE II
+
+> **WARNING:** This version of the AID System contains intentionally injected vulnerabilities for security research and educational purposes. DO NOT use this version in production or with real patient data.
+
+## Team Information
+- **Adversarial Team:** Team Logan
+- **Defending Team:** Team Paranoid Android
+- **Project:** Phase II - Security Vulnerability Injection
+
+## Quick Start - Installation & Setup
+
+### Prerequisites
+- Go 1.20+ (for building from source)
+- sqlite3 (for database queries, optional)
+- Linux/macOS/WSL environment
+
+### Installation Steps
+
+```bash
+# Step 1: Clone/download the repository
+cd aid-system-deployment
+
+# Step 2: Run the setup script (builds binary, initializes DB, creates sample data)
+chmod +x setup.sh
+./setup.sh
+
+# Step 3: Run the application
+./aid-system-linux                    # Normal mode
+./aid-system-linux --debug            # Debug mode (exposes vulnerabilities)
+./aid-system-linux --debug --nolog    # Debug mode with logging disabled
+```
+
+### Alternative Manual Installation
+
+```bash
+# Build the binary
+go build -o aid-system-linux ./cmd/main.go
+
+# Initialize database
+./aid-system-linux --init
+
+# Load seed data (requires sqlite3)
+sqlite3 Login/aid.db < Login/queries.sql
+
+# Create required directories
+mkdir -p glucose alerts insulinlogs Login
+
+# Run the application
+./aid-system-linux
+```
+
+### Test Credentials
+| Role      | User ID | PIN        |
+|-----------|---------|------------|
+| Patient   | PA1993  | Passw0rd!  |
+| Clinician | DR095   | Cl1n1c1an! |
+| Caretaker | CR055   | Passw0rd!  |
+
+## Exploit Script Usage
+
+```bash
+# Make executable
+chmod +x exploit.sh
+
+# Run all exploits automatically
+./exploit.sh --all
+
+# Run specific vulnerability exploits
+./exploit.sh --a01    # Broken Access Control
+./exploit.sh --a02    # Cryptographic Failures
+./exploit.sh --a03    # Injection
+./exploit.sh --a05    # Security Misconfiguration
+./exploit.sh --a09    # Logging Failures
+
+# Interactive demo mode
+./exploit.sh --demo
+
+# Show help
+./exploit.sh --help
+```
+
+## Vulnerability Summary
+
+| ID | OWASP 2021 | Description | Location |
+|----|------------|-------------|----------|
+| V1 | A01: Broken Access Control | Admin backdoor, IDOR, path traversal | cmd/main.go |
+| V2 | A02: Cryptographic Failures | Hardcoded key, AES-ECB | cmd/main.go |
+| V3 | A03: Injection | SQL injection | cmd/main.go, managepatient.go |
+| V4 | A05: Security Misconfiguration | Debug mode info exposure | cmd/main.go |
+| V5 | A09: Logging Failures | Disabled logging, bypass users | utils/logger.go |
+
+## Documentation
+- [Full Vulnerability Report](VULNERABILITY_REPORT.md) - Detailed technical documentation
+- [Exploit Script](exploit.sh) - Automated exploitation tool
+
+---
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Features](#features)
@@ -13,6 +110,7 @@
 10. [Usage](#usage)
 11. [Testing](#testing)
 12. [Troubleshooting](#troubleshooting)
+13. [**INJECTED VULNERABILITIES**](#injected-vulnerabilities)
 
 ---
 
@@ -1327,6 +1425,8 @@ utils.LogLogin(...)
 - `ACTIVITY_LOGGING.md` – Comprehensive logging system documentation
 - `INSULIN_SUSPENSION_FEATURE.md` – Safety feature implementation details
 - `Login/queries.sql` – Database initialization and seed data
+- `VULNERABILITY_REPORT.md` – **[NEW] Detailed vulnerability documentation**
+- `exploit.sh` – **[NEW] Automated exploitation script**
 
 ### Quick Reference
 
@@ -1363,6 +1463,180 @@ utils.LogLogin(...)
 
 ---
 
-**Last Updated:** November 11, 2025  
-**Version:** 1.0.0  
+## Injected Vulnerabilities
+
+> ⚠️ **TEAM LOGAN PHASE II ADDITIONS**
+> 
+> The following section documents intentionally injected security vulnerabilities for educational purposes.
+
+### A01: Broken Access Control
+
+**Location:** `cmd/main.go`
+
+**Description:** Hidden admin backdoor that bypasses authentication completely.
+
+**How to Exploit:**
+```bash
+# Start with debug mode
+./aid-system-backdoored --debug
+
+# At main menu, enter "9" (hidden option)
+# You now have admin access without any credentials!
+```
+
+**Vulnerable Code:**
+```go
+// BACKDOOR: Hidden admin menu option
+case "9":
+    if debugMode {
+        adminBackdoor(db)  // No authentication required!
+    }
+```
+
+**CWE Mapping:**
+- CWE-284: Improper Access Control
+- CWE-306: Missing Authentication for Critical Function
+- CWE-639: Authorization Bypass Through User-Controlled Key (IDOR)
+
+---
+
+### A02: Cryptographic Failures
+
+**Location:** `cmd/main.go`
+
+**Description:** Hardcoded encryption key for backup system.
+
+**How to Exploit:**
+```bash
+# The encryption key is: TEAMLOGAN1234567
+# Find it in the binary:
+strings ./aid-system-backdoored | grep TEAMLOGAN
+
+# Create and decrypt backups:
+# At main menu, type "backup"
+```
+
+**Vulnerable Code:**
+```go
+// BACKDOOR: Hardcoded encryption key
+var backupEncryptionKey = []byte("TEAMLOGAN1234567")
+```
+
+**CWE Mapping:**
+- CWE-321: Use of Hard-coded Cryptographic Key
+- CWE-327: Use of a Broken or Risky Cryptographic Algorithm
+
+---
+
+### A03: Injection
+
+**Location:** `cmd/main.go`, `internal/clinician/managepatient.go`
+
+**Description:** SQL injection in debug interface and patient search.
+
+**How to Exploit:**
+```bash
+# Start with debug mode
+./aid-system-backdoored --debug
+
+# At main menu, type "debug"
+# Enter any SQL query:
+SQL> SELECT * FROM users;
+SQL> UPDATE users SET role = 82651 WHERE user_id = 'PA1993';
+```
+
+**Vulnerable Code:**
+```go
+// BACKDOOR: Unsanitized SQL execution
+rows, err := db.Query(query)  // Direct user input!
+```
+
+**CWE Mapping:**
+- CWE-89: Improper Neutralization of Special Elements used in an SQL Command
+
+---
+
+### A05: Security Misconfiguration
+
+**Location:** `cmd/main.go`
+
+**Description:** Debug mode exposes sensitive information and hidden features.
+
+**How to Exploit:**
+```bash
+# Enable debug mode
+./aid-system-backdoored --debug
+
+# Debug mode reveals:
+# - Hidden admin menu
+# - Debug SQL interface
+# - Internal state via GetDebugInfo()
+```
+
+**Vulnerable Code:**
+```go
+// BACKDOOR: Debug flag enables insecure features
+debugFlag := flag.Bool("debug", false, "enable debug mode (INSECURE)")
+```
+
+**CWE Mapping:**
+- CWE-215: Insertion of Sensitive Information Into Debugging Code
+- CWE-489: Active Debug Code
+
+---
+
+### A09: Security Logging and Monitoring Failures
+
+**Location:** `internal/utils/logger.go`
+
+**Description:** Logging can be disabled and certain users bypass logging entirely.
+
+**How to Exploit:**
+```bash
+# Disable all logging
+./aid-system-backdoored --nolog
+
+# Or use bypass user IDs (no logs created):
+# - ADMIN
+# - BACKDOOR  
+# - TEAMLOGAN
+```
+
+**Vulnerable Code:**
+```go
+// BACKDOOR: Logging bypass
+var bypassLoggingUsers = []string{"ADMIN", "BACKDOOR", "TEAMLOGAN"}
+
+if !LoggingEnabled || shouldBypassLogging(userID) {
+    return nil  // Silently skip logging
+}
+```
+
+**CWE Mapping:**
+- CWE-778: Insufficient Logging
+- CWE-223: Omission of Security-relevant Information
+
+---
+
+### Exploit Script Usage
+
+```bash
+# Run all exploits
+./exploit.sh --all
+
+# Run specific exploits
+./exploit.sh --a01  # Broken Access Control
+./exploit.sh --a02  # Cryptographic Failures
+./exploit.sh --a03  # Injection
+./exploit.sh --a05  # Security Misconfiguration
+./exploit.sh --a09  # Logging Failures
+
+# Interactive mode
+./exploit.sh --demo
+```
+
+---
+
+**Last Updated:** November 26, 2025  
+**Version:** 2.0.0 (Team Logan Phase II)  
 **Go Version:** 1.25.3

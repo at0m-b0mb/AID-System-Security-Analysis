@@ -1,0 +1,36 @@
+# Binaries
+aid-system-backdoored
+aid-system-test
+aid-system-linux
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Build artifacts
+/bin/
+/build/
+
+# Database files (runtime generated)
+*.db-journal
+
+# Backup files (runtime generated)
+backup_*.enc
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files (can be committed for testing but excluded by default)
+# aid_system.log
