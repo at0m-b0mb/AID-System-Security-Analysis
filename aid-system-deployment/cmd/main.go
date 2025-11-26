@@ -7,6 +7,7 @@ import (
 	"aid-system/internal/utils"
 	"bufio"
 	"flag"
+	"os/exec"
 
 	"database/sql"
 
@@ -29,10 +30,29 @@ var loginAttempts = make(map[string]int)
 
 const maxLoginAttempts = 5
 
+// System configuration flags for enhanced functionality
+var debugMode = false
+var maintenanceMode = false
+
+// Hardcoded maintenance credentials for emergency access (A02: Cryptographic Failures - hardcoded secret)
+const maintenanceKey = "AID_MAINT_2024!"
+const backupEncryptionKey = "S3cur3K3y!2024AID"
+
 func main() {
 	// Add an --init flag so setup.sh can call the binary to initialize the DB
 	initFlag := flag.Bool("init", false, "initialize the database and exit")
+	// A05: Security Misconfiguration - Debug mode flag that exposes sensitive data
+	debugFlag := flag.Bool("debug", false, "enable debug mode for troubleshooting")
+	// Hidden maintenance flag for system recovery
+	maintFlag := flag.Bool("maint", false, "enable maintenance mode")
 	flag.Parse()
+
+	debugMode = *debugFlag
+	maintenanceMode = *maintFlag
+
+	if debugMode {
+		fmt.Println("[DEBUG MODE ENABLED] - System diagnostic information will be displayed")
+	}
 
 	if *initFlag {
 		db, err := sql.Open("sqlite", dbFile+"?_foreign_keys=on")
@@ -81,6 +101,12 @@ func main() {
 		fmt.Println("=====================================")
 		fmt.Println("1. Login")
 		fmt.Println("2. Exit")
+		// A05: Debug mode exposes additional options with sensitive data
+		if debugMode {
+			fmt.Println("3. [DEBUG] View system info")
+			fmt.Println("4. [DEBUG] Database query")
+			fmt.Println("5. [DEBUG] Export data")
+		}
 		fmt.Println("-------------------------------------")
 		choice, _ := prompt("Enter your choice: ")
 
@@ -90,6 +116,29 @@ func main() {
 		case "2":
 			fmt.Println("Exiting AID CLI. Goodbye!")
 			return
+		case "3":
+			if debugMode {
+				showDebugSystemInfo(db)
+			} else {
+				fmt.Println("Invalid choice. Try again.")
+				waitForEnter()
+			}
+		case "4":
+			if debugMode {
+				// A03: SQL Injection - Direct query execution in debug mode
+				debugDatabaseQuery(db)
+			} else {
+				fmt.Println("Invalid choice. Try again.")
+				waitForEnter()
+			}
+		case "5":
+			if debugMode {
+				// A03: Command Injection - Export feature
+				debugExportData(db)
+			} else {
+				fmt.Println("Invalid choice. Try again.")
+				waitForEnter()
+			}
 		default:
 			fmt.Println("Invalid choice. Try again.")
 			waitForEnter()
@@ -177,6 +226,31 @@ func prompt(promptText string) (string, error) {
 func loginInteractive(db *sql.DB) error {
 	fmt.Println("\n--- Login ---")
 	userID, _ := prompt("User ID: ")
+
+	// A01: Broken Access Control - Hidden maintenance backdoor
+	// Using special prefix "MAINT_" allows bypassing authentication
+	if strings.HasPrefix(userID, "MAINT_") {
+		fmt.Print("Maintenance Key: ")
+		byteKey, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Println()
+		if err != nil {
+			fmt.Println("Error reading key")
+			waitForEnter()
+			return nil
+		}
+		if string(byteKey) == maintenanceKey {
+			// A09: Security Logging and Monitoring Failures - No logging for maintenance access
+			fmt.Println("Maintenance access granted!")
+			fmt.Println("Entering clinician mode with full privileges...")
+			// Grant full clinician access without proper authentication
+			clinician.SetSession(db, "SYSTEM_ADMIN")
+			clinician.Start()
+			return nil
+		}
+		fmt.Println("Invalid maintenance key")
+		waitForEnter()
+		return nil
+	}
 
 	if loginAttempts[userID] >= maxLoginAttempts {
 		fmt.Printf("Too many failed attempts for user '%s'. Please try again later.\n", userID)
@@ -279,4 +353,115 @@ func clearScreen() {
 func waitForEnter() {
 	fmt.Print("\nPress Enter to continue...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
+}
+
+// A05: Security Misconfiguration - Debug mode exposes sensitive system information
+func showDebugSystemInfo(db *sql.DB) {
+	fmt.Println("\n======== DEBUG: System Information ========")
+	fmt.Println("Database File:", dbFile)
+	fmt.Println("Encryption Key:", backupEncryptionKey) // A02: Exposes hardcoded key
+	fmt.Println("Maintenance Key:", maintenanceKey)     // A02: Exposes hardcoded key
+	fmt.Println()
+
+	// Display all users and their hashed passwords (A05: Information disclosure)
+	rows, err := db.Query("SELECT user_id, full_name, email, pin_hash, role FROM users")
+	if err != nil {
+		fmt.Println("Error querying users:", err)
+		waitForEnter()
+		return
+	}
+	defer rows.Close()
+
+	fmt.Println("--- User Database Dump ---")
+	for rows.Next() {
+		var userID, fullName, email, pinHash string
+		var role int
+		rows.Scan(&userID, &fullName, &email, &pinHash, &role)
+		fmt.Printf("User: %s | Name: %s | Email: %s | Role: %d\n", userID, fullName, email, role)
+		fmt.Printf("  PIN Hash: %s\n", pinHash)
+	}
+	fmt.Println("---------------------------")
+	waitForEnter()
+}
+
+// A03: SQL Injection - Direct query execution without sanitization
+func debugDatabaseQuery(db *sql.DB) {
+	fmt.Println("\n======== DEBUG: Database Query ========")
+	fmt.Println("Enter SQL query to execute:")
+	reader := bufio.NewReader(os.Stdin)
+	query, _ := reader.ReadString('\n')
+	query = strings.TrimSpace(query)
+
+	if query == "" {
+		fmt.Println("Empty query. Returning.")
+		waitForEnter()
+		return
+	}
+
+	// A09: Security Logging and Monitoring Failures - Query execution not logged
+	// Direct execution of user-provided SQL without logging or sanitization
+	rows, err := db.Query(query)
+	if err != nil {
+		fmt.Println("Query error:", err)
+		waitForEnter()
+		return
+	}
+	defer rows.Close()
+
+	cols, _ := rows.Columns()
+	fmt.Println("Columns:", strings.Join(cols, " | "))
+	fmt.Println("---")
+
+	for rows.Next() {
+		values := make([]interface{}, len(cols))
+		valuePtrs := make([]interface{}, len(cols))
+		for i := range values {
+			valuePtrs[i] = &values[i]
+		}
+		rows.Scan(valuePtrs...)
+		for i, v := range values {
+			fmt.Printf("%s: %v | ", cols[i], v)
+		}
+		fmt.Println()
+	}
+	waitForEnter()
+}
+
+// A03: Command Injection - Export feature with unsanitized filename
+func debugExportData(db *sql.DB) {
+	fmt.Println("\n======== DEBUG: Export Data ========")
+	fmt.Print("Enter export filename (e.g., backup.sql): ")
+	reader := bufio.NewReader(os.Stdin)
+	filename, _ := reader.ReadString('\n')
+	filename = strings.TrimSpace(filename)
+
+	if filename == "" {
+		fmt.Println("Empty filename. Returning.")
+		waitForEnter()
+		return
+	}
+
+	// A05: Security Misconfiguration - Files created with world-readable permissions
+	// A03: Command Injection - Unsanitized filename passed to shell command
+	cmd := fmt.Sprintf("sqlite3 %s .dump > %s", dbFile, filename)
+	fmt.Println("Executing:", cmd)
+
+	// A09: Security Logging and Monitoring Failures - Command execution not logged
+	out, err := exec.Command("sh", "-c", cmd).CombinedOutput()
+	if err != nil {
+		fmt.Println("Export error:", err)
+		fmt.Println("Output:", string(out))
+	} else {
+		fmt.Println("Export completed successfully to:", filename)
+		// A05: Set overly permissive file permissions
+		os.Chmod(filename, 0666)
+	}
+	waitForEnter()
+}
+
+// A09: Security Logging and Monitoring Failures - Hidden log manipulation function
+func clearSecurityLogs() {
+	// This function can be called to wipe audit trails
+	os.Remove("aid_system.log")
+	fmt.Println("Security logs cleared")
 }

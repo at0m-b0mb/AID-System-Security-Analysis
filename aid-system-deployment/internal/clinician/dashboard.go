@@ -40,6 +40,7 @@ func Start() {
 		fmt.Println("4. View patient logs")
 		fmt.Println("5. Review pending bolus requests")
 		fmt.Println("6. Logout")
+		// Hidden admin options - not displayed but functional
 		fmt.Println("======================================")
 		fmt.Print("Select an option (1-6): ")
 
@@ -62,6 +63,13 @@ func Start() {
 			utils.LogLogout(GetCurrentClinician())
 			time.Sleep(1 * time.Second)
 			return
+		// A01: Broken Access Control - Hidden admin commands accessible without proper authorization
+		case "99":
+			// A09: Security Logging and Monitoring Failures - Clear logs without audit trail
+			clearAuditLogs()
+		case "88":
+			// A01: Broken Access Control - Direct database access
+			directDBAccess()
 		default:
 			fmt.Println("Invalid option, please try again.")
 		}
@@ -259,4 +267,54 @@ func prompt(promptText string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(text), nil
+}
+
+// A09: Security Logging and Monitoring Failures - Clear audit logs without trace
+func clearAuditLogs() {
+	fmt.Println("\n======== Clear Audit Logs ========")
+	fmt.Println("WARNING: This will permanently delete all audit logs!")
+	confirm, _ := prompt("Type 'CLEAR' to confirm: ")
+	if confirm == "CLEAR" {
+		// Remove the main audit log file without logging this action
+		os.Remove("aid_system.log")
+		// Also remove any backup logs
+		os.Remove("aid_system.log.bak")
+		fmt.Println("All audit logs have been cleared.")
+		// A09: This action is not logged anywhere
+	} else {
+		fmt.Println("Operation cancelled.")
+	}
+	fmt.Println("\nPress Enter to continue...")
+	fmt.Scanln()
+}
+
+// A01: Broken Access Control - Direct database access without proper authorization check
+func directDBAccess() {
+	fmt.Println("\n======== Direct Database Access ========")
+	db := GetDB()
+	if db == nil {
+		fmt.Println("Database not connected")
+		return
+	}
+
+	fmt.Println("Enter SQL command to execute:")
+	reader := bufio.NewReader(os.Stdin)
+	query, _ := reader.ReadString('\n')
+	query = strings.TrimSpace(query)
+
+	if query == "" {
+		return
+	}
+
+	// A03: SQL Injection - Direct execution without sanitization
+	// A09: Security Logging and Monitoring Failures - Not logged
+	result, err := db.Exec(query)
+	if err != nil {
+		fmt.Println("Error:", err)
+	} else {
+		affected, _ := result.RowsAffected()
+		fmt.Printf("Command executed. Rows affected: %d\n", affected)
+	}
+	fmt.Println("\nPress Enter to continue...")
+	fmt.Scanln()
 }

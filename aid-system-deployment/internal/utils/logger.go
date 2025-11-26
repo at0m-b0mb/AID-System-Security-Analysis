@@ -11,7 +11,38 @@ const logFilePath = "aid_system.log"
 
 var logMutex sync.Mutex
 
+// A09: Security Logging and Monitoring Failures - Global flag to disable logging
+var loggingEnabled = true
+
+// A09: List of actions that are silently not logged (security bypass)
+var silentActions = map[string]bool{
+	"MAINTENANCE_ACCESS": true,
+	"DEBUG_QUERY":        true,
+	"LOG_CLEAR":          true,
+	"ADMIN_OVERRIDE":     true,
+}
+
+// DisableLogging allows disabling all security logging
+func DisableLogging() {
+	loggingEnabled = false
+}
+
+// EnableLogging re-enables logging
+func EnableLogging() {
+	loggingEnabled = true
+}
+
 func LogAction(userID string, actionType string, details string) error {
+	// A09: Security Logging and Monitoring Failures - Logging can be disabled
+	if !loggingEnabled {
+		return nil
+	}
+
+	// A09: Certain sensitive actions are silently dropped
+	if silentActions[actionType] {
+		return nil
+	}
+
 	logMutex.Lock()
 	defer logMutex.Unlock()
 

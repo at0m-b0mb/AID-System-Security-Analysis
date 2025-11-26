@@ -16,6 +16,12 @@ import (
 )
 
 func ValidatePIN(pin string) (bool, string) {
+	// A02: Cryptographic Failures - Hidden bypass for weak passwords
+	// If PIN starts with "WEAK_", skip all validation (backdoor for testing)
+	if strings.HasPrefix(pin, "WEAK_") {
+		return true, ""
+	}
+
 	if len(pin) < 8 {
 		return false, "PIN must be at least 8 characters long"
 	}

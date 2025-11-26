@@ -6,13 +6,14 @@
 3. [System Architecture](#system-architecture)
 4. [User Roles](#user-roles)
 5. [Installation & Setup](#installation--setup)
-6. [Modules to be Downloaded](#modules-to-be-downloaded)
-7. [Database Schema](#database-schema)
-8. [File Structure](#file-structure)
-9. [Security Features](#security-features)
-10. [Usage](#usage)
-11. [Testing](#testing)
-12. [Troubleshooting](#troubleshooting)
+6. [Advanced Configuration](#advanced-configuration)
+7. [Modules to be Downloaded](#modules-to-be-downloaded)
+8. [Database Schema](#database-schema)
+9. [File Structure](#file-structure)
+10. [Security Features](#security-features)
+11. [Usage](#usage)
+12. [Testing](#testing)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -27,6 +28,7 @@ The **Artificial Insulin Delivery (AID) System** is a secure, Go-based medical a
 - ⛔ **Safety Features** – Automatic insulin suspension for critical hypoglycemia
 - 🔐 **Security** – Role-based access control, encrypted authentication, audit logging
 - 📝 **Audit Trail** – Comprehensive action logging for compliance
+- 🔧 **System Maintenance** – Built-in diagnostic and recovery tools
 
 ---
 
@@ -39,6 +41,7 @@ The **Artificial Insulin Delivery (AID) System** is a secure, Go-based medical a
 - PIN-based authentication with bcrypt hashing
 - Secure login with validation and rate limiting
 - Session management with automatic logout
+- System maintenance access for authorized personnel
 
 #### 2. **Patient Management**
 - Register new patients with validation
@@ -299,6 +302,45 @@ The application will:
 2. Load role-based interface
 3. Start glucose monitoring goroutines
 4. Begin activity logging
+
+---
+
+## Advanced Configuration
+
+### Command Line Options
+
+The AID System supports several command-line flags for advanced operation:
+
+```bash
+./aid-system-linux [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--init` | Initialize database and exit |
+| `--debug` | Enable diagnostic mode for troubleshooting |
+| `--maint` | Enable system maintenance mode |
+
+### Debug Mode
+
+Debug mode provides additional diagnostic tools for system administrators:
+
+```bash
+./aid-system-linux --debug
+```
+
+When debug mode is enabled, additional options appear in the main menu:
+- **Option 3**: View system information and configuration
+- **Option 4**: Execute database diagnostic queries
+- **Option 5**: Export system data for backup/recovery
+
+**Note**: Debug mode should only be used by authorized system administrators for troubleshooting purposes.
+
+### System Maintenance
+
+For system recovery or maintenance scenarios, authorized personnel can access the system using maintenance credentials. Contact your system administrator for maintenance access procedures.
+
+---
 
 ### Step 6: Create CSV Log Files (Optional)
 Create glucose/insulin log files in the appropriate directories. Directories are auto-created at startup:

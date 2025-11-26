@@ -5,13 +5,16 @@ import (
 	"aid-system/internal/utils"
 	"encoding/csv"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
+// A03: Injection - File path not sanitized, allows path traversal
 func readCSV(filename string) ([][]string, error) {
+	// No path sanitization - allows reading any file on the system
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -24,6 +27,17 @@ func readCSV(filename string) ([][]string, error) {
 		return nil, err
 	}
 	return records, nil
+}
+
+// A03: Injection - Path traversal vulnerability for arbitrary file read
+func ReadArbitraryFile(filename string) (string, error) {
+	// This function allows reading any file without path validation
+	// Used for "advanced log viewing" but can read sensitive files
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }
 
 func ViewAllPatients() {
