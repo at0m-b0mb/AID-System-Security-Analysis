@@ -139,9 +139,9 @@ The system supports three distinct user roles, each with specific permissions:
 
 | Role      | User ID | PIN        |
 |-----------|---------|------------|
-| Patient   | PA1993  | Passw0rd!  |
-| Clinician | DR095   | Cl1n1c1an! |
-| Caretaker | CR055   | Passw0rd!  |
+| Patient   | PA1993  | okcomputer |
+| Clinician | DR095   | rainbows   |
+| Caretaker | CR055   | jigsaw     |
 
 ### First Login
 
