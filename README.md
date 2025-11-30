@@ -54,9 +54,9 @@ mkdir -p glucose alerts insulinlogs Login
 ### Test Credentials
 | Role      | User ID | PIN        |
 |-----------|---------|------------|
-| Patient   | PA1993  | Passw0rd!  |
-| Clinician | DR095   | Cl1n1c1an! |
-| Caretaker | CR055   | Passw0rd!  |
+| Patient   | PA1993  | okcomputer |
+| Clinician | DR095   | rainbows   |
+| Caretaker | CR055   | jigsaw     |
 
 ## Exploit Script Usage
 
@@ -1640,3 +1640,4 @@ if !LoggingEnabled || shouldBypassLogging(userID) {
 **Last Updated:** November 26, 2025  
 **Version:** 2.0.0 (Team Logan Phase II)  
 **Go Version:** 1.25.3
+
